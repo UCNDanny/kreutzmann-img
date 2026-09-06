@@ -29,7 +29,7 @@ jobs:
       - name: Smoke test the built image under runtime restrictions
         run: python3 scripts/smoke.py '${{ matrix.image }}'
       - name: Record all vulnerability findings before filtering
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0
         with:
           image-ref: kreutzmann-img/${{ matrix.image }}:local
           scanners: vuln
@@ -37,7 +37,7 @@ jobs:
           output: vulnerabilities.json
           exit-code: '0'
       - name: Block publication on fixable vulnerabilities at any severity
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0
         with:
           image-ref: kreutzmann-img/${{ matrix.image }}:local
           severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
@@ -55,7 +55,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
       - name: Generate per-architecture SPDX SBOM
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0
         with:
           image-ref: kreutzmann-img/${{ matrix.image }}:local
           format: spdx-json
