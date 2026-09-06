@@ -6,8 +6,8 @@ setup:
 	$(PYTHON) scripts/setup.py
 
 build:
-	$(PYTHON) scripts/dependencies.py --build keycloak
 	$(PYTHON) scripts/dependencies.py --build oauth2-proxy
+	$(PYTHON) scripts/dependencies.py --build keycloak
 
 identity:
 	docker compose up -d keycloak

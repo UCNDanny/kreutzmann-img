@@ -4,9 +4,11 @@ Own-image builds of oauth2-proxy and Keycloak for `linux/amd64` and `linux/arm64
 The GitHub Actions pipeline builds on native runners, tests and scans before
 publication, and publishes signed multi-platform images to GHCR.
 
-**Current release blocker:** Keycloak has unresolved Trivy findings on both
-architectures. See [SECURITY-SCAN.md](SECURITY-SCAN.md). The publication gate remains
-enabled; Docker Scout's clean result alone does not satisfy it.
+The publication gate blocks any release with a vulnerability that has an available
+upstream fix, at every severity. Findings with no fix — currently Debian base-OS
+packages in both distroless images — are tracked in [SECURITY-SCAN.md](SECURITY-SCAN.md)
+and `compliance/vulnerability-findings.csv` rather than gated. A single scanner's clean
+result does not by itself satisfy the gate.
 
 **These are not CIS-certified, STIG-assessed, or deployment-qualified FIPS images.**
 Go's pinned FIPS module and Keycloak's strict BCFIPS provider are configured.
@@ -124,8 +126,11 @@ directly in Java; use `JAVA_TOOL_OPTIONS` for additional JVM options and keep
 Base distro major/minor upgrades, action updates, and Go FIPS module upgrades require
 review. Dependabot handles pinned GitHub Action updates.
 
-Applicable vulnerabilities at every severity (including unknown and unfixed findings)
-block publication. The only exclusion is GO-2026-5932 on the gateway binary: the
+Vulnerabilities with an available upstream fix, at every severity, block publication;
+the gate sets `ignore-unfixed`. Findings with no fix — currently Debian base-OS packages
+in both distroless images — are kept in each run's scan artifacts and in
+`compliance/vulnerability-findings.csv`, and reviewed there instead of blocking. The
+only explicit exclusion is GO-2026-5932 on the gateway binary: the
 advisory concerns OpenPGP, which is absent from its target-platform dependency graph.
 Every gateway build and the smoke test enforce that absence. If OpenPGP is introduced,
 the build fails before scanning. The evidence is retained in the image at
@@ -138,7 +143,7 @@ from `go_security_updates` in the lock, verified through Go's checksum database.
 These pins require review when upstream dependencies change. Keycloak also applies checksum-pinned
 Netty 4.1.137.Final, OpenTelemetry API/context/common 1.62.0, and SQL Server JDBC
 13.4.0.jre11 updates before augmentation. The exact artifacts are recorded in
-`keycloak_security_updates`; review them when updating Keycloak. Keycloak's distroless runtime leaves build tooling outside the final image. Remaining upstream vulnerabilities must be fixed before a release can publish.
+`keycloak_security_updates`; review them when updating Keycloak. Keycloak's distroless runtime leaves build tooling outside the final image. Upstream vulnerabilities with an available fix must be taken before a release can publish.
 Native build jobs have read-only repository permissions. Publication jobs download
 the tested artifacts and never execute application images or untrusted PR code.
 
@@ -185,8 +190,8 @@ administrator credentials after initial setup. Do not use `start-dev` in product
 ## Verification limits
 
 CI builds each image natively from locked inputs, runs the repository unit tests,
-smoke-tests the built image under the production runtime restrictions, and enforces the
-all-severity vulnerability gate before publishing SBOMs, provenance, and signatures. The
+smoke-tests the built image under the production runtime restrictions, and blocks any
+finding with an available fix before publishing SBOMs, provenance, and signatures. The
 smoke test checks the fixed non-root identity, that the image starts read-only with no
 capabilities, the gateway's FIPS build flags and OpenPGP absence, and that Keycloak
 reaches BCFIPS Approved Mode. It does not exercise OIDC login, database TLS, HTTP

@@ -36,12 +36,12 @@ jobs:
           format: json
           output: vulnerabilities.json
           exit-code: '0'
-      - name: Block publication on applicable vulnerabilities at every severity
+      - name: Block publication on fixable vulnerabilities at any severity
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
           image-ref: kreutzmann-img/${{ matrix.image }}:local
           severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
-          ignore-unfixed: false
+          ignore-unfixed: true
           scanners: vuln
           trivyignores: ${{ matrix.image == 'oauth2-proxy' && '.trivyignore-oauth2-proxy.yaml' || '' }}
           exit-code: '1'

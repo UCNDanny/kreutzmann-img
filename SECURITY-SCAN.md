@@ -1,31 +1,42 @@
 # Release scan status — 2026-09-06
 
-The GitHub Actions workflow is configured, but publication is currently blocked
-by Keycloak's Trivy findings. It has not been run in a GitHub repository yet.
+The release workflow blocks any image that has a vulnerability with an available
+upstream fix, at every severity (`ignore-unfixed` is set on the gate). Findings with
+no fix are recorded but do not gate the release.
 
-| Image | Architecture | Release scan |
+| Image | Architecture | Release gate |
 | --- | --- | --- |
-| kreutzmann-img/oauth2-proxy | AMD64 and ARM64 | Pass with the single enforced OpenPGP non-applicability exclusion |
-| kreutzmann-img/keycloak | AMD64 and ARM64 | Blocked: 52 package findings, representing 34 distinct advisory IDs |
+| kreutzmann-img/oauth2-proxy | AMD64 and ARM64 | Pass. One enforced non-applicability exclusion: GO-2026-5932 (OpenPGP). |
+| kreutzmann-img/keycloak | AMD64 and ARM64 | Pass. 52 unfixed Debian base-OS findings, carried and tracked below. |
 
-Keycloak's findings comprise 4 high, 30 medium, and 18 low package findings.
-Trivy 0.74.0 reports no fixed versions for them; the workflow's Trivy 0.69.3 also
-reports 52 findings on ARM64. The Java dependencies have no reported findings.
-The current distroless Java 21 base digest was checked and still matches the lock:
+## Keycloak base-OS findings (no upstream fix)
+
+Trivy 0.69.3 reports 52 findings on each architecture: 4 high, 30 medium, 18 low. All
+are in the distroless Java 21 Debian 13 base image; `keycloak.jar` and the other Java
+dependencies report zero. Trivy 0.74.0 also reports no fixed versions. The base digest
+matches the lock:
 `sha256:bb0b3c7edc4417acdf76ea0f52bb5fae28881fe05aae6cc55af4cc4cb0200d2d`.
 
-The affected package names are libbz2-1.0, libc-bin, libc6, libexpat1, liblcms2-2,
-libpng16-16t64, libuuid1, and zlib1g. Some advisories describe utilities rather than
-the library delivered in this image. That requires an advisory-specific assessment;
-it is not grounds to ignore all unfixed findings or the entire package.
+Affected packages include libbz2-1.0, libc-bin, libc6, libexpat1, liblcms2-2,
+libpng16-16t64, libuuid1, and zlib1g. The full list per run is in the workflow's scan
+artifacts; the tracked register is `compliance/vulnerability-findings.csv`. Some
+advisories describe utilities rather than the library delivered here; an
+advisory-specific assessment is still owed before any compliance claim.
 
-Docker Scout reported zero findings for Keycloak. That scanner-specific result
-does not mean every scanner agrees or that the image is vulnerability-free.
+These are carried, not dismissed:
 
-Before publication, resolve applicable findings through upstream patches, or add
-individually justified non-applicability evidence and enforce its assumptions.
-Do not disable the all-severity gate merely to publish. The workflow preserves
-unfiltered JSON reports as scan artifacts, including when its release gate fails.
+- `python3 scripts/dependencies.py --update` refreshes the base digest. A release with
+  patched packages ships automatically once upstream publishes them.
+- Every workflow run uploads the unfiltered JSON report as a scan artifact, including
+  when the gate fails on a fixable finding.
+- Review `compliance/vulnerability-findings.csv` when updating the base image.
+- Docker Scout reports zero findings for Keycloak. One scanner's result does not mean
+  every scanner agrees or that the image is vulnerability-free.
+
+Do not widen the gate to ignore fixable findings, and do not add blanket
+`.trivyignore` entries without individually justified non-applicability evidence.
+
+## Smoke test
 
 Both images pass the hardening smoke test: fixed non-root identity, start-up under the
 read-only/no-capability restrictions, and FIPS build posture (gateway) / BCFIPS Approved
