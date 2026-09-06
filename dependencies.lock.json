@@ -1,0 +1,154 @@
+{
+  "go_fips_module": "v1.0.0",
+  "go_security_updates": {
+    "crypto": "v0.56.0",
+    "grpc": "v1.83.1"
+  },
+  "bases": {
+    "go": "docker.io/library/golang:1.26.8-bookworm@sha256:9fdc884aacc3bec89b20ffc69f4bb369c78210e3e4f600387b5128b12c199f81",
+    "static": "gcr.io/distroless/static-debian13:nonroot@sha256:1c2c046bc09ed40fad370b599a0b1ae7987f55b01e247cf27a7c27cd97e5bbc7",
+    "ubi": "registry.access.redhat.com/ubi9/ubi-minimal:9.7@sha256:907b68736aa798b2d38255b7aa070b2a70acb90803864a40f05d0ec47556ddd0",
+    "ca": "docker.io/library/alpine:3.23@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40",
+    "java": "gcr.io/distroless/java21-debian13:nonroot@sha256:bb0b3c7edc4417acdf76ea0f52bb5fae28881fe05aae6cc55af4cc4cb0200d2d"
+  },
+  "oauth2_proxy": {
+    "version": "7.15.4",
+    "commit": "81ff034fe2ff3246e670c694b02e3267d1ae46bc",
+    "url": "https://codeload.github.com/oauth2-proxy/oauth2-proxy/tar.gz/81ff034fe2ff3246e670c694b02e3267d1ae46bc",
+    "sha256": "12af844d3fa3b53693e4dd6874fc9ca2861d1eee1c79678c623cab906b944d1f"
+  },
+  "keycloak": {
+    "version": "26.7.3",
+    "url": "https://github.com/keycloak/keycloak/releases/download/26.7.3/keycloak-26.7.3.tar.gz",
+    "sha256": "77657f30b7e90d70f727712ce1c967f430fd6a5e9f458d32d8c6df0635345f47"
+  },
+  "bcfips": {
+    "bc-fips": {
+      "version": "2.1.2",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bc-fips/2.1.2/bc-fips-2.1.2.jar",
+      "sha256": "044fcd8a29d236edea8a5b414406cdae63b475f9ad9f05fe2dc904a277941115"
+    },
+    "bctls-fips": {
+      "version": "2.1.22",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bctls-fips/2.1.22/bctls-fips-2.1.22.jar",
+      "sha256": "688410563445e1a65ff33cb67842499f0788994d752c3df8f7ea4a0d40ddbf50"
+    },
+    "bcpkix-fips": {
+      "version": "2.1.10",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-fips/2.1.10/bcpkix-fips-2.1.10.jar",
+      "sha256": "c4370064664d474d8681f55f302cfdade4cae0f3d798b10fd18b0ab8fbd6fed1"
+    },
+    "bcutil-fips": {
+      "version": "2.1.5",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-fips/2.1.5/bcutil-fips-2.1.5.jar",
+      "sha256": "503aaf5c2c5b7c729547462efe13699b5f6dacf9be150b7c48bba974b793dc92"
+    }
+  },
+  "keycloak_security_updates": [
+    {
+      "file": "com.microsoft.sqlserver.mssql-jdbc-13.2.1.jre11.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/microsoft/sqlserver/mssql-jdbc/13.4.0.jre11/mssql-jdbc-13.4.0.jre11.jar",
+      "sha256": "e36f5237c1267983e5b88dc2169f6b9d7e50eceec6dc1ca31018e3877e14af66"
+    },
+    {
+      "file": "io.netty.netty-buffer-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-buffer/4.1.137.Final/netty-buffer-4.1.137.Final.jar",
+      "sha256": "f474b14c7734f15e0540394cb6f39d67777b7581a42919e4ac89d253d4efd929"
+    },
+    {
+      "file": "io.netty.netty-codec-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-codec/4.1.137.Final/netty-codec-4.1.137.Final.jar",
+      "sha256": "9987b6a660b0a6b1f0d791485dae33180b3d1c63687c006fe6d3fd025e9e3798"
+    },
+    {
+      "file": "io.netty.netty-codec-dns-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-codec-dns/4.1.137.Final/netty-codec-dns-4.1.137.Final.jar",
+      "sha256": "2d9a33ce41bd9f6f607df95039e42518a1fca16f83c9bbfe72beb57df6e2489f"
+    },
+    {
+      "file": "io.netty.netty-codec-haproxy-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-codec-haproxy/4.1.137.Final/netty-codec-haproxy-4.1.137.Final.jar",
+      "sha256": "5ffa58b94c5ac48fb7e41843c18acf7a268e90b5b85423987829c9291ce3a5df"
+    },
+    {
+      "file": "io.netty.netty-codec-http-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-codec-http/4.1.137.Final/netty-codec-http-4.1.137.Final.jar",
+      "sha256": "0535bb5a736472bef5c948d15eb273c4ab9f796656fc7c5d6b982ad92bddbd49"
+    },
+    {
+      "file": "io.netty.netty-codec-http2-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-codec-http2/4.1.137.Final/netty-codec-http2-4.1.137.Final.jar",
+      "sha256": "576ddcfb51b78e86f145c9a52b60e500b1a1d5a257cafec8aa5416ffba044b49"
+    },
+    {
+      "file": "io.netty.netty-codec-socks-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-codec-socks/4.1.137.Final/netty-codec-socks-4.1.137.Final.jar",
+      "sha256": "4a6190e08988c058bfeef2b5965e71946439c771abf721c68f4039b4e7b023e8"
+    },
+    {
+      "file": "io.netty.netty-common-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-common/4.1.137.Final/netty-common-4.1.137.Final.jar",
+      "sha256": "d31926b01adcc07af86f5e27b81b6d6c115df17d366e835d1fc3f5a1924e7e52"
+    },
+    {
+      "file": "io.netty.netty-handler-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-handler/4.1.137.Final/netty-handler-4.1.137.Final.jar",
+      "sha256": "d0e4c6ee4779f59f6ab2fb5d388e4f57147c82270164b37945764bb9bda96a44"
+    },
+    {
+      "file": "io.netty.netty-handler-proxy-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-handler-proxy/4.1.137.Final/netty-handler-proxy-4.1.137.Final.jar",
+      "sha256": "843de10c4cef34cbc1a5344090f1b57db532fbebf141559862da675f6b656df4"
+    },
+    {
+      "file": "io.netty.netty-resolver-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-resolver/4.1.137.Final/netty-resolver-4.1.137.Final.jar",
+      "sha256": "b4cf2aeedd9fc7c8c439bbfe574f63cfe5b83392e88bbc07ca0e8424b7cff955"
+    },
+    {
+      "file": "io.netty.netty-resolver-dns-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-resolver-dns/4.1.137.Final/netty-resolver-dns-4.1.137.Final.jar",
+      "sha256": "898d63ca62ed68ff46543c5344f969424b417f1e8d082fe2bb0181ba10144194"
+    },
+    {
+      "file": "io.netty.netty-transport-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-transport/4.1.137.Final/netty-transport-4.1.137.Final.jar",
+      "sha256": "6251adc2a2921572382732a2db188d4f4f2251fd6ebb49c5d44bbf33d6bfb1a7"
+    },
+    {
+      "file": "io.netty.netty-transport-classes-epoll-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-transport-classes-epoll/4.1.137.Final/netty-transport-classes-epoll-4.1.137.Final.jar",
+      "sha256": "55049554b799dc8e53bf234fffa36e001f7b5b65c32994b9bd59fc6356f1c52f"
+    },
+    {
+      "file": "io.netty.netty-transport-native-epoll-4.1.136.Final-linux-aarch_64.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-transport-native-epoll/4.1.137.Final/netty-transport-native-epoll-4.1.137.Final-linux-aarch_64.jar",
+      "sha256": "82fb63a2dc90c0bddb81e04065a1c06fb4c5be722ad5d64b46491daf8b6f9a01"
+    },
+    {
+      "file": "io.netty.netty-transport-native-epoll-4.1.136.Final-linux-x86_64.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-transport-native-epoll/4.1.137.Final/netty-transport-native-epoll-4.1.137.Final-linux-x86_64.jar",
+      "sha256": "185db6053e0e9573d36fa4eb6567b26139afaa4daa7bf5a068e661568304542b"
+    },
+    {
+      "file": "io.netty.netty-transport-native-unix-common-4.1.136.Final.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/netty/netty-transport-native-unix-common/4.1.137.Final/netty-transport-native-unix-common-4.1.137.Final.jar",
+      "sha256": "8056e7637f9948f953314894cf995ab664711b66c73c4cd5b593ae84f0b1048c"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-api-1.57.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.62.0/opentelemetry-api-1.62.0.jar",
+      "sha256": "d58143928c049233653e6bf1282ff8a767ebdd5e6a82b3f336158c30e40b431d"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-context-1.57.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.62.0/opentelemetry-context-1.62.0.jar",
+      "sha256": "8ec86c3609222b9b6307bf40154c1f1c288d1f18ada0155409e7797adbdbe517"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-common-1.57.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-common/1.62.0/opentelemetry-common-1.62.0.jar",
+      "sha256": "d6310bebde67d65c1519696728d8604005315ed08ab14071956fc0826fd71815"
+    }
+  ]
+}

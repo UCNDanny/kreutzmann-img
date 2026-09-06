@@ -1,0 +1,5 @@
+standard,revision,control_id,scope,implementation,evidence,status,owner,exception_expiry
+CIS,selection-required,selection-required,image/runtime/host,see SECURITY-CONTROLS.md,,not assessed,,
+DISA STIG/SRG,selection-required,selection-required,image/application/runtime/host,see SECURITY-CONTROLS.md,,not assessed,,
+FIPS 140-3,security-policy-required,module-and-operating-environment,amd64,Go module and BCFIPS configured,,not assessed,,
+FIPS 140-3,security-policy-required,module-and-operating-environment,arm64,Go module and BCFIPS configured,,not assessed,,

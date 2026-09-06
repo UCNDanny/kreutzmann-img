@@ -1,0 +1,165 @@
+name: Build, validate, and release
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [oauth2-proxy, keycloak]
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - run: python3 -m unittest discover -s tests -v
+      - name: Build natively from locked inputs
+        run: python3 scripts/dependencies.py --build '${{ matrix.image }}' --platform 'linux/${{ matrix.arch }}'
+      - name: Smoke test the built image under runtime restrictions
+        run: python3 scripts/smoke.py '${{ matrix.image }}'
+      - name: Record all vulnerability findings before filtering
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          image-ref: kreutzmann-img/${{ matrix.image }}:local
+          scanners: vuln
+          format: json
+          output: vulnerabilities.json
+          exit-code: '0'
+      - name: Block publication on applicable vulnerabilities at every severity
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          image-ref: kreutzmann-img/${{ matrix.image }}:local
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          ignore-unfixed: false
+          scanners: vuln
+          trivyignores: ${{ matrix.image == 'oauth2-proxy' && '.trivyignore-oauth2-proxy.yaml' || '' }}
+          exit-code: '1'
+          format: table
+      - name: Preserve vulnerability report even when the gate fails
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: scan-${{ matrix.image }}-${{ matrix.arch }}
+          path: vulnerabilities.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Generate per-architecture SPDX SBOM
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          image-ref: kreutzmann-img/${{ matrix.image }}:local
+          format: spdx-json
+          output: sbom.spdx.json
+          exit-code: '0'
+      - name: Export the tested image
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: docker save 'kreutzmann-img/${{ matrix.image }}:local' -o image.tar
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          name: tested-${{ matrix.image }}-${{ matrix.arch }}
+          path: |
+            image.tar
+            sbom.spdx.json
+          retention-days: 3
+          compression-level: 0
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      matrix:
+        image: [oauth2-proxy, keycloak]
+        arch: [amd64, arm64]
+    steps:
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: tested-${{ matrix.image }}-${{ matrix.arch }}
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Publish the tested bytes, without rebuilding or executing them
+        id: image
+        env:
+          OWNER: ${{ github.repository_owner }}
+          IMAGE: ${{ matrix.image }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          name="ghcr.io/${OWNER,,}/kreutzmann-img/${IMAGE}"
+          tag="sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${ARCH}"
+          docker load -i image.tar
+          docker tag "kreutzmann-img/${IMAGE}:local" "${name}:${tag}"
+          docker push "${name}:${tag}"
+          digest=$(docker buildx imagetools inspect "${name}:${tag}" --format '{{.Manifest.Digest}}')
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+      - name: Sign the published architecture digest
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        run: cosign sign --yes "${IMAGE_NAME}@${IMAGE_DIGEST}"
+      - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@4651f806c01d8637787e274ac3bdf724ef169f34 # v3
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
+  index:
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      matrix:
+        image: [oauth2-proxy, keycloak]
+    steps:
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+      - name: Publish and sign the multi-platform index
+        env:
+          OWNER: ${{ github.repository_owner }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          set -euo pipefail
+          name="ghcr.io/${OWNER,,}/kreutzmann-img/${IMAGE}"
+          tag="sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker buildx imagetools create -t "${name}:${tag}" "${name}:${tag}-amd64" "${name}:${tag}-arm64"
+          digest=$(docker buildx imagetools inspect "${name}:${tag}" --format '{{.Manifest.Digest}}')
+          cosign sign --yes "${name}@${digest}"
+          echo "### ${IMAGE}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploy: \`${name}@${digest}\`" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,83 @@
+# Reference deployment, NOT a Railway networking emulator. External DB required.
+# A host TLS reverse proxy must forward app/auth domains to the loopback ports.
+name: kreutzmann-img
+services:
+  oauth2-proxy:
+    image: ${OAUTH2_PROXY_IMAGE:?Set OAUTH2_PROXY_IMAGE}
+    user: "65532:65532" # Never run the gateway as root.
+    read_only: true # Prevent runtime changes to the image filesystem.
+    cap_drop: [ALL] # No Linux capabilities are needed on port 4180.
+    security_opt: ["no-new-privileges:true"] # Block setuid/file-capability elevation.
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=16m,uid=65532,gid=65532,mode=0700"]
+    ports: ["127.0.0.1:4180:4180"] # Only the host TLS proxy may enter here.
+    environment:
+      OAUTH2_PROXY_PROVIDER: keycloak-oidc
+      OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_CLIENT_ID:?Set client ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET:?Set client secret}
+      OAUTH2_PROXY_OIDC_ISSUER_URL: ${OAUTH2_PROXY_OIDC_ISSUER_URL:?Set realm issuer URL}
+      OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_REDIRECT_URL:?Set callback URL}
+      OAUTH2_PROXY_SCOPE: ${OAUTH2_PROXY_SCOPE:?Set requested scopes}
+      OAUTH2_PROXY_CODE_CHALLENGE_METHOD: S256
+      OAUTH2_PROXY_INSECURE_OIDC_SKIP_NONCE: "false"
+      OAUTH2_PROXY_EMAIL_DOMAINS: ${OAUTH2_PROXY_EMAIL_DOMAINS:?Set email domains}
+      OAUTH2_PROXY_ALLOWED_GROUPS: ${OAUTH2_PROXY_ALLOWED_GROUPS:?Set allowed groups}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:?Set cookie secret}
+      OAUTH2_PROXY_COOKIE_NAME: __Host-oauth2_proxy
+      OAUTH2_PROXY_COOKIE_PATH: /
+      OAUTH2_PROXY_COOKIE_SECURE: "true"
+      OAUTH2_PROXY_COOKIE_HTTPONLY: "true"
+      OAUTH2_PROXY_COOKIE_SAMESITE: lax
+      OAUTH2_PROXY_COOKIE_EXPIRE: 8h
+      OAUTH2_PROXY_COOKIE_REFRESH: 4m
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_PROXY_PREFIX: /oauth2
+      OAUTH2_PROXY_UPSTREAMS: ${OAUTH2_PROXY_UPSTREAMS:?Set upstreams}
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+      OAUTH2_PROXY_API_ROUTES: ${OAUTH2_PROXY_API_ROUTES}
+      OAUTH2_PROXY_PASS_ACCESS_TOKEN: "false"
+      OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER: "false"
+      OAUTH2_PROXY_PASS_BASIC_AUTH: "false"
+      OAUTH2_PROXY_SKIP_AUTH_STRIP_HEADERS: "false"
+    networks: [gateway]
+    mem_limit: 256m
+    pids_limit: 128
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  keycloak:
+    image: ${KEYCLOAK_IMAGE:?Set KEYCLOAK_IMAGE}
+    user: "1000:1000" # Matches the image's fixed unprivileged identity.
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m,uid=1000,gid=1000,mode=0700
+      - /opt/keycloak/data:rw,noexec,nosuid,nodev,size=128m,uid=1000,gid=1000,mode=0700
+    ports: ["127.0.0.1:8080:8080"] # Port 9000 deliberately has no host mapping.
+    command: [start, --optimized]
+    environment:
+      KC_HOSTNAME: ${KC_HOSTNAME:?Set public Keycloak URL}
+      KC_HTTP_ENABLED: "true" # TLS terminates at the trusted edge.
+      KC_PROXY_HEADERS: xforwarded
+      KC_DB_URL: ${KC_DB_URL:?Set verified JDBC URL}
+      KC_DB_USERNAME: ${KC_DB_USERNAME:?Set DB username}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?Set DB password}
+      DATABASE_CA_PEM: ${DATABASE_CA_PEM:-}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-}
+    networks: [identity]
+    mem_limit: 2g
+    pids_limit: 512
+    restart: unless-stopped
+    stop_grace_period: 45s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+# Egress is required for public OIDC and the external database. Neither network
+# implies access to Railway private DNS. Only host loopback ports are published.
+networks:
+  gateway: {}
+  identity: {}

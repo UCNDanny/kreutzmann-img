@@ -1,0 +1,7 @@
+**
+!Dockerfile.*
+!scripts/
+!dependencies.lock.json
+!scripts/KeycloakLauncher.java
+!scripts/keycloak-java.options
+!scripts/keycloak-security-updates.py
