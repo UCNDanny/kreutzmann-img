@@ -1,0 +1,35 @@
+Copyright (c) 2026 Danny Kreutzmann. All rights reserved.
+
+NO LICENSE GRANTED
+
+This repository is published for transparency and reference only. No licence,
+express or implied, is granted to any person to use, copy, modify, merge,
+publish, distribute, sublicense, or create derivative works from the original
+contents of this repository (the Dockerfiles, scripts, workflows, configuration,
+and documentation authored here) without the prior written permission of the
+copyright holder.
+
+Publication here does not place this work in the public domain and must not be
+taken as an invitation to reuse it. If you want to use it, ask first.
+
+THIRD-PARTY SOFTWARE
+
+This restriction applies only to the original content of this repository. It does
+not, and cannot, restrict the third-party software that the build process
+downloads, compiles, or packages into the resulting container images. Each such
+component is licensed by its own authors under its own terms, which continue to
+govern that component in the images. See THIRD-PARTY-NOTICES.md.
+
+NO WARRANTY
+
+THE REPOSITORY AND ANY IMAGES PRODUCED FROM IT ARE PROVIDED "AS IS", WITHOUT
+WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, SECURITY, AND
+NONINFRINGEMENT.
+
+Nothing here has been formally assessed, audited, or certified by anyone. It is a
+personal project, maintained for the copyright holder's own use, and must not be
+relied upon for any purpose. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR
+ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE REPOSITORY, THE IMAGES,
+OR THE USE OR OTHER DEALINGS IN THEM.

@@ -202,3 +202,47 @@ routing, or the FIPS qualification of the host.
 
 Before production, run the checklist in `DEPLOY-RAILWAY.md` against an isolated test
 database and users. No database container or production credentials are used by CI.
+
+## Attribution and disclaimer
+
+These are unofficial rebuilds. Their only purpose is to rebuild the upstream
+projects from locked, verified inputs so that vulnerabilities with an available
+upstream fix are picked up promptly. No application code is forked or changed
+beyond the checksum-pinned security updates recorded in `dependencies.lock.json`.
+
+All rights, trademarks, and credit for the underlying software belong to their
+respective projects and maintainers — oauth2-proxy (MIT), Keycloak (Apache-2.0),
+the base images, the FIPS Go toolchain, BouncyCastle FIPS, and every bundled
+library. Each stays under its own license inside the images. The full list is in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). This project is not affiliated
+with, endorsed by, or supported by any of them, Red Hat, or the CNCF.
+
+The original content of this repository — the Dockerfiles, scripts, workflows,
+configuration, and documentation authored here — is **not open source and carries
+no license**. It is published for transparency only; see [LICENSE](LICENSE). Do
+not treat its availability as permission to reuse it, and do not treat anything in
+it as production-ready. Ask first.
+
+Nothing here has been formally assessed, audited, or certified by anyone. "Hardened"
+describes the intent of the build choices — pinned inputs, distroless runtimes,
+non-root read-only execution, prompt uptake of fixed CVEs — not a verified or
+accredited state. There is no third-party review, no CMVP validation, and no
+compliance claim. Treat every security property as unverified until you check it
+yourself.
+
+This repository and the images it produces are provided "as is", without warranty
+of any kind. The maintainer accepts no responsibility or liability for any error,
+vulnerability, misconfiguration, data loss, downtime, or damage arising from their
+use. This is a personal project, built primarily for the maintainer's own
+deployments and privacy needs. Anyone else using it is responsible for reviewing,
+testing, and qualifying whatever they deploy.
+
+This repository processes no personal data. Any privacy, data-protection, consent,
+and terms-of-service obligations that arise from *running* Keycloak or oauth2-proxy
+against real users belong entirely to whoever operates that deployment, not to
+this repository or its maintainer.
+
+Parts of this repository — code, configuration, and documentation — were produced
+with the help of AI tools, including Claude and ChatGPT. It has not been
+exhaustively reviewed line by line. The maintainer makes no guarantee of
+correctness and is not responsible for any consequences of its use.
