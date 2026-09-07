@@ -1,0 +1,41 @@
+name: Auto-merge dependency updates
+on:
+  workflow_run:
+    workflows: ["Build, validate, and release"]
+    types: [completed]
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+concurrency:
+  group: automerge-dependencies
+  cancel-in-progress: false
+jobs:
+  merge:
+    # Only the successful validation run that autobump.yml dispatches on its own
+    # branch qualifies. Runs for main, pull requests, and forks are ignored.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'automation/dependencies' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Squash-merge the validated dependency PR and release from main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          number=$(gh pr list --repo "$REPO" --head automation/dependencies \
+            --state open --json number --jq '.[0].number // empty')
+          if [ -z "$number" ]; then
+            echo "No open PR for automation/dependencies; nothing to merge."
+            exit 0
+          fi
+          gh pr merge "$number" --repo "$REPO" --squash --delete-branch
+          # A merge made with GITHUB_TOKEN does not trigger push-driven workflows,
+          # so start the publishing run on main explicitly (its publish/index jobs
+          # gate on refs/heads/main and a non-pull_request event, both satisfied
+          # by this dispatch).
+          gh workflow run release.yml --repo "$REPO" --ref main

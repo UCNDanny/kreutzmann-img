@@ -45,14 +45,19 @@ There is **no automatic production deployment**.
 
 Images are published as:
 
-- `ghcr.io/<lowercase-owner>/kreutzmann-img/oauth2-proxy`
-- `ghcr.io/<lowercase-owner>/kreutzmann-img/keycloak`
+- `ghcr.io/<lowercase-owner>/oauth2-proxy`
+- `ghcr.io/<lowercase-owner>/keycloak`
 
-The successful workflow summary contains deployable `@sha256:...` references.
-Release tags include source SHA, run ID, and run attempt; architecture tags add
-`-amd64` or `-arm64`. There is no mutable `latest` release tag.
+Each `index` job prints a deployable `@sha256:...` digest to the workflow summary.
+Every publish to `main` also refreshes two movable tags per image: `:latest` and
+`:<upstream-version>` (for example `:7.15.4` for oauth2-proxy, `:26.7.3` for
+Keycloak). Both move whenever the image is rebuilt — including base-image CVE
+patches that do not change the upstream version — so pin the `@sha256:...` digest
+for anything that must be reproducible. Immutable per-run tags encode source SHA,
+run ID, and run attempt; architecture tags add `-amd64` or `-arm64`.
+
 Only use one publishing repository per owner for these package names, or rename
-both occurrences in the workflow before setting up another repository.
+the occurrences in the workflow before setting up another repository.
 
 Set GHCR package visibility/access so Railway can pull the images. Public packages
 avoid registry credentials; private packages require a suitably scoped pull credential.
