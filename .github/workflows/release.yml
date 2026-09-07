@@ -106,11 +106,20 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           set -euo pipefail
-          name="ghcr.io/${OWNER,,}/kreutzmann-img/${IMAGE}"
+          name="ghcr.io/${OWNER,,}/${IMAGE}"
           tag="sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${ARCH}"
           docker load -i image.tar
+          # "kreutzmann-img/${IMAGE}:local" is only the local build tag baked into
+          # image.tar by scripts/dependencies.py; retag to the published path here.
           docker tag "kreutzmann-img/${IMAGE}:local" "${name}:${tag}"
-          docker push "${name}:${tag}"
+          # GHCR returns intermittent 5xx on the manifest PUT after all blobs are
+          # uploaded; docker push has no retry of its own.
+          for attempt in 1 2 3 4 5; do
+            docker push "${name}:${tag}" && break
+            [ "${attempt}" -eq 5 ] && { echo "push failed after ${attempt} attempts" >&2; exit 1; }
+            echo "push attempt ${attempt} failed; retrying in $((attempt * 15))s" >&2
+            sleep "$((attempt * 15))"
+          done
           digest=$(docker buildx imagetools inspect "${name}:${tag}" --format '{{.Manifest.Digest}}')
           echo "name=${name}" >> "$GITHUB_OUTPUT"
           echo "digest=${digest}" >> "$GITHUB_OUTPUT"
@@ -156,6 +165,9 @@ jobs:
       matrix:
         image: [oauth2-proxy, keycloak]
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -169,10 +181,23 @@ jobs:
           IMAGE: ${{ matrix.image }}
         run: |
           set -euo pipefail
-          name="ghcr.io/${OWNER,,}/kreutzmann-img/${IMAGE}"
+          name="ghcr.io/${OWNER,,}/${IMAGE}"
           tag="sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          docker buildx imagetools create -t "${name}:${tag}" "${name}:${tag}-amd64" "${name}:${tag}-arm64"
+          # The upstream application version this image packages, read straight
+          # from the reviewed lock file. ":latest" and ":<version>" are movable
+          # pointers refreshed on every rebuild (base-image CVE patches included);
+          # the "@sha256:..." digest is the only immutable reference.
+          if [ "${IMAGE}" = keycloak ]; then key=keycloak; else key=oauth2_proxy; fi
+          version=$(python3 -c 'import json,sys; print(json.load(open("dependencies.lock.json"))[sys.argv[1]]["version"])' "${key}")
+          for attempt in 1 2 3 4 5; do
+            docker buildx imagetools create \
+              -t "${name}:${tag}" -t "${name}:latest" -t "${name}:${version}" \
+              "${name}:${tag}-amd64" "${name}:${tag}-arm64" && break
+            [ "${attempt}" -eq 5 ] && { echo "imagetools create failed after ${attempt} attempts" >&2; exit 1; }
+            echo "attempt ${attempt} failed; retrying in $((attempt * 15))s" >&2
+            sleep "$((attempt * 15))"
+          done
           digest=$(docker buildx imagetools inspect "${name}:${tag}" --format '{{.Manifest.Digest}}')
           cosign sign --yes "${name}@${digest}"
           echo "### ${IMAGE}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Deploy: \`${name}@${digest}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploy: \`${name}@${digest}\` (also \`:latest\`, \`:${version}\`)" >> "$GITHUB_STEP_SUMMARY"
