@@ -28,9 +28,10 @@ In GitHub:
 1. Enable Actions and allow GitHub Actions to create pull requests.
 2. Protect `main`; require the four native `build` matrix checks and human review.
 3. Enable the daily update workflow. You can also run it manually in Actions.
-4. Ensure native `ubuntu-24.04-arm` runners and artifact attestations are available
-   for your repository/plan. Assign equivalent runners if necessary.
-5. For a private repo, verify GitHub plan support for the attestation actions.
+4. Ensure native `ubuntu-24.04-arm` runners are available for your repository/plan.
+   Assign equivalent runners if necessary.
+5. Artifact attestations require a public repo or an org/Enterprise plan. On a
+   user-owned private repo the workflow skips them; everything else still runs.
 
 No PAT is needed. The updater uses `GITHUB_TOKEN` to create a dependency PR and
 explicitly dispatches validation, avoiding GitHub's token-created-PR trigger suppression.
@@ -147,10 +148,11 @@ Netty 4.1.137.Final, OpenTelemetry API/context/common 1.62.0, and SQL Server JDB
 Native build jobs have read-only repository permissions. Publication jobs download
 the tested artifacts and never execute application images or untrusted PR code.
 
-SBOMs and build provenance are attached per architecture. Each architecture image is
-signed immediately after publication, and the final multi-platform index is signed
-after assembly. Signing uses GitHub Actions OIDC with Cosign; no signing key or extra
-repository secret is needed. Local builds are unsigned until published by this workflow.
+SBOMs and build provenance are attested per architecture where GitHub allows it
+(public repos, or org/Enterprise plans); a user-owned private repo skips that step.
+Each architecture image is signed immediately after publication regardless, and the
+final multi-platform index is signed after assembly. Signing uses GitHub Actions OIDC
+with Cosign; no signing key or extra repository secret is needed. Local builds are unsigned until published by this workflow.
 Verify the GitHub workflow identity, issuer, and exact digest when consuming
 signatures. Signatures prove publisher identity, not compliance.
 
@@ -191,7 +193,8 @@ administrator credentials after initial setup. Do not use `start-dev` in product
 
 CI builds each image natively from locked inputs, runs the repository unit tests,
 smoke-tests the built image under the production runtime restrictions, and blocks any
-finding with an available fix before publishing SBOMs, provenance, and signatures. The
+finding with an available fix before publishing signatures and, where GitHub supports
+it, SBOM and provenance attestations. The
 smoke test checks the fixed non-root identity, that the image starts read-only with no
 capabilities, the gateway's FIPS build flags and OpenPGP absence, and that Keycloak
 reaches BCFIPS Approved Mode. It does not exercise OIDC login, database TLS, HTTP

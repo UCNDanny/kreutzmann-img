@@ -120,12 +120,16 @@ jobs:
           IMAGE_NAME: ${{ steps.image.outputs.name }}
           IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         run: cosign sign --yes "${IMAGE_NAME}@${IMAGE_DIGEST}"
+      # GitHub artifact attestations are unavailable on user-owned private repos.
+      # They run automatically once the repository is public or on an org/Enterprise plan.
       - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        if: ${{ !github.event.repository.private }}
         with:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
       - uses: actions/attest-sbom@4651f806c01d8637787e274ac3bdf724ef169f34 # v3
+        if: ${{ !github.event.repository.private }}
         with:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.image.outputs.digest }}
