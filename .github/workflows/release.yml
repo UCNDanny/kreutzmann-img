@@ -178,11 +178,18 @@ jobs:
           set -euo pipefail
           name="ghcr.io/${OWNER,,}/${IMAGE}"
           tag="sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          # Publishing ":latest" alongside the immutable run tag keeps the
-          # digest-pinned reference authoritative while giving a friendly,
-          # movable pointer for pulls that don't need reproducibility.
-          docker buildx imagetools create -t "${name}:${tag}" -t "${name}:latest" "${name}:${tag}-amd64" "${name}:${tag}-arm64"
+          # GITHUB_RUN_NUMBER increments by one on every run of this workflow
+          # file, including pull_request runs where this job never executes,
+          # so "v1.0.<run number>" only increases and never repeats between
+          # actual releases, though the numbers between releases may skip.
+          # It resets only if the workflow is deleted/recreated.
+          version="v1.0.${GITHUB_RUN_NUMBER}"
+          # Publishing ":latest" and the incremental version tag alongside the
+          # immutable run tag keeps the digest-pinned reference authoritative
+          # while giving friendly, movable pointers for pulls that don't need
+          # reproducibility.
+          docker buildx imagetools create -t "${name}:${tag}" -t "${name}:latest" -t "${name}:${version}" "${name}:${tag}-amd64" "${name}:${tag}-arm64"
           digest=$(docker buildx imagetools inspect "${name}:${tag}" --format '{{.Manifest.Digest}}')
           cosign sign --yes "${name}@${digest}"
           echo "### ${IMAGE}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Deploy: \`${name}@${digest}\` (also tagged \`${name}:latest\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploy: \`${name}@${digest}\` (also tagged \`${name}:latest\` and \`${name}:${version}\`)" >> "$GITHUB_STEP_SUMMARY"
