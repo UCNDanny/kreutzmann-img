@@ -120,8 +120,17 @@ jobs:
           IMAGE_NAME: ${{ steps.image.outputs.name }}
           IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         run: cosign sign --yes "${IMAGE_NAME}@${IMAGE_DIGEST}"
-      # GitHub artifact attestations are unavailable on user-owned private repos.
-      # They run automatically once the repository is public or on an org/Enterprise plan.
+      # Keyless Cosign SBOM attestation. Uses the same GitHub OIDC identity as
+      # signing and works on a user-owned private repo, so every published image
+      # carries an SBOM attestation regardless of plan.
+      - name: Attest the SBOM to the registry
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        run: cosign attest --yes --type spdxjson --predicate sbom.spdx.json "${IMAGE_NAME}@${IMAGE_DIGEST}"
+      # GitHub-native artifact attestations add SLSA build provenance and a second
+      # SBOM attestation. GitHub only issues these for a public repo or an
+      # org/Enterprise plan, so they self-skip on a user-owned private repo.
       - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         if: ${{ !github.event.repository.private }}
         with:
