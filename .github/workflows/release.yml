@@ -106,9 +106,12 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           set -euo pipefail
-          name="ghcr.io/${OWNER,,}/kreutzmann-img/${IMAGE}"
+          name="ghcr.io/${OWNER,,}/${IMAGE}"
           tag="sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${ARCH}"
           docker load -i image.tar
+          # "kreutzmann-img/${IMAGE}:local" is only the local build tag baked into
+          # image.tar by scripts/dependencies.py; it is unrelated to the published
+          # GHCR path and is retagged to "${name}" below before pushing.
           docker tag "kreutzmann-img/${IMAGE}:local" "${name}:${tag}"
           docker push "${name}:${tag}"
           digest=$(docker buildx imagetools inspect "${name}:${tag}" --format '{{.Manifest.Digest}}')
@@ -145,6 +148,10 @@ jobs:
           sbom-path: sbom.spdx.json
           push-to-registry: true
   index:
+    # No separate ref guard needed: `needs: publish` makes this job skip
+    # whenever `publish` is skipped, and `publish` only runs on pushes (or
+    # manual dispatches) to `refs/heads/main` per its own `if:` condition.
+    # So the ":latest" tag below only ever gets updated for the default branch.
     needs: publish
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -169,10 +176,13 @@ jobs:
           IMAGE: ${{ matrix.image }}
         run: |
           set -euo pipefail
-          name="ghcr.io/${OWNER,,}/kreutzmann-img/${IMAGE}"
+          name="ghcr.io/${OWNER,,}/${IMAGE}"
           tag="sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          docker buildx imagetools create -t "${name}:${tag}" "${name}:${tag}-amd64" "${name}:${tag}-arm64"
+          # Publishing ":latest" alongside the immutable run tag keeps the
+          # digest-pinned reference authoritative while giving a friendly,
+          # movable pointer for pulls that don't need reproducibility.
+          docker buildx imagetools create -t "${name}:${tag}" -t "${name}:latest" "${name}:${tag}-amd64" "${name}:${tag}-arm64"
           digest=$(docker buildx imagetools inspect "${name}:${tag}" --format '{{.Manifest.Digest}}')
           cosign sign --yes "${name}@${digest}"
           echo "### ${IMAGE}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Deploy: \`${name}@${digest}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploy: \`${name}@${digest}\` (also tagged \`${name}:latest\`)" >> "$GITHUB_STEP_SUMMARY"

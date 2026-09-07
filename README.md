@@ -45,12 +45,20 @@ There is **no automatic production deployment**.
 
 Images are published as:
 
-- `ghcr.io/<lowercase-owner>/kreutzmann-img/oauth2-proxy`
-- `ghcr.io/<lowercase-owner>/kreutzmann-img/keycloak`
+- `ghcr.io/<lowercase-owner>/oauth2-proxy`
+- `ghcr.io/<lowercase-owner>/keycloak`
 
-The successful workflow summary contains deployable `@sha256:...` references.
-Release tags include source SHA, run ID, and run attempt; architecture tags add
-`-amd64` or `-arm64`. There is no mutable `latest` release tag.
+The successful workflow summary contains deployable `@sha256:...` references, and
+every push to the default branch also updates a mutable `:latest` tag for each
+image. Release tags include source SHA, run ID, and run attempt; architecture
+tags add `-amd64` or `-arm64`. Prefer the digest for reproducible deployments;
+use `:latest` only where you accept that the reference can move on the next merge:
+
+```sh
+docker pull ghcr.io/ucndanny/oauth2-proxy:latest
+docker run --rm ghcr.io/ucndanny/oauth2-proxy:latest --version
+```
+
 Only use one publishing repository per owner for these package names, or rename
 both occurrences in the workflow before setting up another repository.
 
