@@ -25,6 +25,11 @@ Create an image service using your published Keycloak digest. Associate
 for an image-only service, enter its equivalent settings in the UI. These JSON files
 configure deployment behavior, not image source credentials or custom domains.
 
+Leave the start command empty. The image starts Keycloak through its own
+entrypoint (a shell-free Java launcher that also prepares `/tmp/database-ca.pem`);
+there is no `kc.sh` or `keycloak-entrypoint.sh` in it. A custom start command,
+including one copied from an official-image service, breaks the deployment.
+
 Attach the Keycloak public domain, targeting **8080**, and configure:
 
 ```dotenv
@@ -43,7 +48,7 @@ The image automatically deploys its bundled public CA certificates to
 For a database signed by a private CA, supply its trusted PEM through `DATABASE_CA_PEM`
 in the deployment environment; the entrypoint uses it in place of the public bundle.
 The JDBC URL explicitly selects that trust source. This does not modify Java's general
-HTTPS trust store. Preserve the entrypoint if configuring a custom start command.
+HTTPS trust store. Do not set a custom start command; the entrypoint prepares this file.
 
 Set an appropriate memory limit (start with 2 GiB) and one replica. Verify the service's
 writable paths and platform security controls. `KC_FEATURES=fips` and
