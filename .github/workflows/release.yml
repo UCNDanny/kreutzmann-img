@@ -98,28 +98,29 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+      - run: sudo apt-get update && sudo apt-get install -y skopeo
       - name: Publish the tested bytes, without rebuilding or executing them
         id: image
         env:
           OWNER: ${{ github.repository_owner }}
           IMAGE: ${{ matrix.image }}
           ARCH: ${{ matrix.arch }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           name="ghcr.io/${OWNER,,}/${IMAGE}"
           tag="sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${ARCH}"
-          docker load -i image.tar
-          # "kreutzmann-img/${IMAGE}:local" is only the local build tag baked into
-          # image.tar by scripts/dependencies.py; retag to the published path here.
-          docker tag "kreutzmann-img/${IMAGE}:local" "${name}:${tag}"
-          # GHCR returns intermittent 5xx on the manifest PUT after all blobs are
-          # uploaded; docker push has no retry of its own.
-          for attempt in 1 2 3 4 5; do
-            docker push "${name}:${tag}" && break
-            [ "${attempt}" -eq 5 ] && { echo "push failed after ${attempt} attempts" >&2; exit 1; }
-            echo "push attempt ${attempt} failed; retrying in $((attempt * 15))s" >&2
-            sleep "$((attempt * 15))"
-          done
+          # image.tar holds the exact bytes smoke-tested in the build job, saved
+          # under "kreutzmann-img/${IMAGE}:local" by scripts/dependencies.py. Copy
+          # it to GHCR straight from the archive: no rebuild, no execution, no
+          # local daemon. --format oci rewrites the docker-save schema2 manifest
+          # to OCI media types so the multi-arch index the "index" job builds on
+          # top is an OCI image index -- a legacy Docker manifest list cannot be
+          # analyzed by Docker Scout or Docker Desktop's containerd image store.
+          # --retry-times covers GHCR's intermittent 5xx on the manifest PUT.
+          skopeo copy --retry-times 5 --format oci \
+            --dest-creds "${GITHUB_ACTOR}:${GITHUB_TOKEN}" \
+            docker-archive:image.tar "docker://${name}:${tag}"
           digest=$(docker buildx imagetools inspect "${name}:${tag}" --format '{{.Manifest.Digest}}')
           echo "name=${name}" >> "$GITHUB_OUTPUT"
           echo "digest=${digest}" >> "$GITHUB_OUTPUT"
@@ -197,6 +198,14 @@ jobs:
             echo "attempt ${attempt} failed; retrying in $((attempt * 15))s" >&2
             sleep "$((attempt * 15))"
           done
+          # imagetools create keeps the input media types; the per-arch tags are
+          # pushed as OCI, so the index must be an OCI image index. Fail loudly if
+          # a legacy Docker manifest list ever slips back in -- Docker Scout and
+          # Docker Desktop cannot analyze that shape.
+          media=$(docker buildx imagetools inspect "${name}:${tag}" --raw \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["mediaType"])')
+          [ "${media}" = application/vnd.oci.image.index.v1+json ] \
+            || { echo "published index is ${media}, not an OCI image index" >&2; exit 1; }
           digest=$(docker buildx imagetools inspect "${name}:${tag}" --format '{{.Manifest.Digest}}')
           cosign sign --yes "${name}@${digest}"
           echo "### ${IMAGE}" >> "$GITHUB_STEP_SUMMARY"
