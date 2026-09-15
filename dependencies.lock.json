@@ -2,7 +2,7 @@
   "go_fips_module": "v1.0.0",
   "go_security_updates": {
     "crypto": "v0.56.0",
-    "grpc": "v1.83.1"
+    "grpc": "v1.83.2"
   },
   "bases": {
     "go": "docker.io/library/golang:1.26.8-bookworm@sha256:9fdc884aacc3bec89b20ffc69f4bb369c78210e3e4f600387b5128b12c199f81",
