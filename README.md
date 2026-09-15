@@ -25,18 +25,19 @@ The workflows must be at the repository root to be discovered by GitHub.
 
 In GitHub:
 
-1. Enable Actions and allow GitHub Actions to create pull requests.
-2. Protect `main`; require the four native `build` matrix checks and human review.
-3. Enable the daily update workflow. You can also run it manually in Actions.
+1. Add a `PR_BOT_TOKEN` secret: a fine-grained PAT with Actions, Contents, and
+   Pull requests read/write on this repository.
+2. Protect `main`; require the four native `build` matrix checks.
+3. Enable the 6-hourly update workflow. You can also run it manually in Actions.
 4. Ensure native `ubuntu-24.04-arm` runners are available for your repository/plan.
    Assign equivalent runners if necessary.
 5. Signing and the Cosign SBOM attestation always run. GitHub-native artifact
    attestations (SLSA provenance, second SBOM) additionally run only on a public
    repo or an org/Enterprise plan; a user-owned private repo skips just those.
 
-No PAT is needed. The updater uses `GITHUB_TOKEN` to create a dependency PR and
-explicitly dispatches validation, avoiding GitHub's token-created-PR trigger suppression.
-Merging triggers publication. For the first release, push these files to `main`,
+The updater opens its dependency PR with `PR_BOT_TOKEN`, so validation runs on it;
+a passing PR is squash-merged and the merge publishes from `main`. A failed build is
+retried once, then triggers a dependency refresh (`selfheal.yml`). For the first release, push these files to `main`,
 then open **Actions → Build, validate, and release** and wait for all jobs to finish.
 You can also select **Run workflow** on `main`. Each final `index` job prints the
 exact image digest to use in your service. Set the service image source to that

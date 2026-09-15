@@ -1,12 +1,10 @@
 name: Upstream dependency updates
 on:
   schedule:
-    - cron: '23 6 * * *'
+    - cron: '23 */6 * * *'
   workflow_dispatch:
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
+  contents: read
 concurrency:
   group: dependency-updates
   cancel-in-progress: false
@@ -26,7 +24,8 @@ jobs:
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         id: pr
         with:
-          token: ${{ github.token }}
+          # A PAT, unlike GITHUB_TOKEN, makes the PR trigger its pull_request validation.
+          token: ${{ secrets.PR_BOT_TOKEN }}
           branch: automation/dependencies
           title: 'Update hardened image dependencies'
           commit-message: 'Update verified upstream artifacts and base-image digests'
@@ -41,10 +40,3 @@ jobs:
             Go FIPS module version is deliberately not auto-upgraded.
             Upstream notes: https://github.com/oauth2-proxy/oauth2-proxy/releases
             Keycloak notes: https://github.com/keycloak/keycloak/releases
-      # GITHUB_TOKEN-created PRs do not trigger pull_request workflows. An explicit
-      # dispatch does trigger validation, while publishing remains default-branch-only.
-      - name: Dispatch validation of the bot branch
-        if: steps.pr.outputs.pull-request-number != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run release.yml --ref automation/dependencies

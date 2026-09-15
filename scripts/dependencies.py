@@ -46,8 +46,16 @@ def digest_image(ref):
         raise ValueError(f'Invalid image digest for {ref}')
     return ref + '@' + result
 
+def latest_go_module(module):
+    metadata = json.loads(fetch(f'https://proxy.golang.org/{module}/@latest'))
+    version = metadata.get('Version', '')
+    if not re.fullmatch(r'v\d+\.\d+\.\d+', version):
+        raise ValueError(f'Invalid stable version for {module}: {version}')
+    return version
+
 def update():
     lock = json.loads(LOCK.read_text())
+    lock['go_security_updates']['grpc'] = latest_go_module('google.golang.org/grpc')
     release = stable('oauth2-proxy/oauth2-proxy')
     tag = release['tag_name']
     commit = api(f'repos/oauth2-proxy/oauth2-proxy/commits/{tag}')['sha']
