@@ -18,9 +18,9 @@
     "sha256": "12af844d3fa3b53693e4dd6874fc9ca2861d1eee1c79678c623cab906b944d1f"
   },
   "keycloak": {
-    "version": "26.7.3",
-    "url": "https://github.com/keycloak/keycloak/releases/download/26.7.3/keycloak-26.7.3.tar.gz",
-    "sha256": "77657f30b7e90d70f727712ce1c967f430fd6a5e9f458d32d8c6df0635345f47"
+    "version": "26.7.4",
+    "url": "https://github.com/keycloak/keycloak/releases/download/26.7.4/keycloak-26.7.4.tar.gz",
+    "sha256": "04823c336b797a7e18889a44262a7a64e6bf624cbbcc518c85e2622176ff2eee"
   },
   "bcfips": {
     "bc-fips": {
