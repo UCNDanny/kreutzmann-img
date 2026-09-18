@@ -46,12 +46,24 @@ def digest_image(ref):
         raise ValueError(f'Invalid image digest for {ref}')
     return ref + '@' + result
 
+def osv_affected(module, version):
+    body = json.dumps({'version': version, 'package': {'name': module, 'ecosystem': 'Go'}}).encode()
+    request = urllib.request.Request('https://api.osv.dev/v1/query', data=body,
+                                     headers={'Content-Type': 'application/json'})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return bool(json.loads(response.read()).get('vulns'))
+
 def latest_go_module(module):
-    metadata = json.loads(fetch(f'https://proxy.golang.org/{module}/@latest'))
-    version = metadata.get('Version', '')
-    if not re.fullmatch(r'v\d+\.\d+\.\d+', version):
-        raise ValueError(f'Invalid stable version for {module}: {version}')
-    return version
+    # "@latest" can point at an abandoned release line the maintainers chose not to
+    # patch (e.g. grpc-go skipped fixing 1.84.x and told users to move to 1.85+), so
+    # walk stable versions newest-first and skip any OSV still flags as vulnerable.
+    versions = [v for v in fetch(f'https://proxy.golang.org/{module}/@v/list').decode().split()
+               if re.fullmatch(r'v\d+\.\d+\.\d+', v)]
+    versions.sort(key=lambda v: tuple(int(part) for part in v[1:].split('.')), reverse=True)
+    for version in versions:
+        if not osv_affected(module, version):
+            return version
+    raise ValueError(f'No unaffected stable version found for {module}')
 
 def update():
     lock = json.loads(LOCK.read_text())
