@@ -14,6 +14,10 @@ for update in lock['keycloak_security_updates']:
         data = response.read()
     if hashlib.sha256(data).hexdigest() != update['sha256']:
         raise RuntimeError(f'Checksum mismatch: {target.name}')
-    # Quarkus's distribution classpath refers to these paths. Replace the bytes
-    # before augmentation; each JAR retains its genuine Maven/version metadata.
-    target.write_bytes(data)
+    replacement = libraries / update.get('replacement_file', update['file'])
+    replacement.write_bytes(data)
+    if replacement != target:
+        target.unlink()
+        # Keycloak's prebuilt Quarkus app model retains the upstream path during
+        # augmentation, while scanners use the real JAR name to identify its version.
+        target.symlink_to(replacement.name)
