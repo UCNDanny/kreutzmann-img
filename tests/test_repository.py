@@ -28,6 +28,13 @@ class RepositoryTests(unittest.TestCase):
         for path in (ROOT / '.github/workflows').glob('*.yml'):
             for ref in re.findall(r'uses:\s*(\S+)', path.read_text()):
                 self.assertRegex(ref, r'^[\w-]+/[\w-]+@[a-f0-9]{40}$')
+    def test_keycloak_security_update_replacements_are_jars(self):
+        lock = json.loads((ROOT / 'dependencies.lock.json').read_text())
+        for update in lock['keycloak_security_updates']:
+            self.assertTrue(update['file'].endswith('.jar'))
+            if replacement := update.get('replacement_file'):
+                self.assertTrue(replacement.endswith('.jar'))
+                self.assertNotEqual(replacement, update['file'])
     def test_no_broad_health_bypass(self):
         compose = (ROOT / 'docker-compose.yml').read_text()
         self.assertNotIn('SKIP_AUTH_ROUTES', compose)
