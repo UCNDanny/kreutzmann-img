@@ -24,9 +24,9 @@
   },
   "bcfips": {
     "bc-fips": {
-      "version": "2.1.3",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bc-fips/2.1.3/bc-fips-2.1.3.jar",
-      "sha256": "f55fc476ede820d5c03fe87e6ced5bb0095e1dc30b387445846a3ff0274f8c0e"
+      "version": "2.1.2",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bc-fips/2.1.2/bc-fips-2.1.2.jar",
+      "sha256": "044fcd8a29d236edea8a5b414406cdae63b475f9ad9f05fe2dc904a277941115"
     },
     "bctls-fips": {
       "version": "2.1.22",
