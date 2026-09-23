@@ -1,67 +1,16 @@
 # kreutzmann-img
 
 Own-image builds of oauth2-proxy and Keycloak for `linux/amd64` and `linux/arm64`.
-The GitHub Actions pipeline builds on native runners, tests and scans before
-publication, and publishes signed multi-platform images to GHCR.
-
-The publication gate blocks any release with a vulnerability that has an available
-upstream fix, at every severity. Findings with no fix — currently Debian base-OS
-packages in both distroless images — are tracked in [SECURITY-SCAN.md](SECURITY-SCAN.md)
-and `compliance/vulnerability-findings.csv` rather than gated. A single scanner's clean
-result does not by itself satisfy the gate.
+Dependency refreshes, builds, tests, scans, signing, and publication are manual. This
+repository does not include Dependabot or GitHub Actions workflows. Findings without
+an upstream fix are tracked in [SECURITY-SCAN.md](SECURITY-SCAN.md) and
+`compliance/vulnerability-findings.csv`.
 
 **These are not CIS-certified, STIG-assessed, or deployment-qualified FIPS images.**
 Go's pinned FIPS module and Keycloak's strict BCFIPS provider are configured.
 The remaining assessment boundaries are recorded in [SECURITY-CONTROLS.md](SECURITY-CONTROLS.md).
 Do not advertise compliance without completing that evidence. This matters on Railway,
 where the underlying FIPS host and runtime controls have not been established.
-
-## Put this in your repository
-
-Copy the **contents** of this directory to the root of your GitHub repository,
-including `.github`, `.dockerignore`, and `.gitignore`. Use `main` as the default
-branch, or update every `refs/heads/main`/branch condition in `release.yml`.
-The workflows must be at the repository root to be discovered by GitHub.
-
-In GitHub:
-
-1. Add a `PR_BOT_TOKEN` secret: a fine-grained PAT with Actions, Contents, and
-   Pull requests read/write on this repository.
-2. Protect `main`; require the four native `build` matrix checks.
-3. Enable the 6-hourly update workflow. You can also run it manually in Actions.
-4. Ensure native `ubuntu-24.04-arm` runners are available for your repository/plan.
-   Assign equivalent runners if necessary.
-5. Signing and the Cosign SBOM attestation always run. GitHub-native artifact
-   attestations (SLSA provenance, second SBOM) additionally run only on a public
-   repo or an org/Enterprise plan; a user-owned private repo skips just those.
-
-The updater opens its dependency PR with `PR_BOT_TOKEN`, so validation runs on it;
-a passing PR is squash-merged and the merge publishes from `main`. A failed build is
-retried once, then triggers a dependency refresh (`selfheal.yml`). For the first release, push these files to `main`,
-then open **Actions → Build, validate, and release** and wait for all jobs to finish.
-You can also select **Run workflow** on `main`. Each final `index` job prints the
-exact image digest to use in your service. Set the service image source to that
-reference, provide deployment variables through the hosting service, and deploy.
-There is **no automatic production deployment**.
-
-Images are published as:
-
-- `ghcr.io/<lowercase-owner>/oauth2-proxy`
-- `ghcr.io/<lowercase-owner>/keycloak`
-
-Each `index` job prints a deployable `@sha256:...` digest to the workflow summary.
-Every publish to `main` also refreshes two movable tags per image: `:latest` and
-`:<upstream-version>` (for example `:7.15.4` for oauth2-proxy, `:26.7.3` for
-Keycloak). Both move whenever the image is rebuilt — including base-image CVE
-patches that do not change the upstream version — so pin the `@sha256:...` digest
-for anything that must be reproducible. Immutable per-run tags encode source SHA,
-run ID, and run attempt; architecture tags add `-amd64` or `-arm64`.
-
-Only use one publishing repository per owner for these package names, or rename
-the occurrences in the workflow before setting up another repository.
-
-Set GHCR package visibility/access so Railway can pull the images. Public packages
-avoid registry credentials; private packages require a suitably scoped pull credential.
 
 ## Build locally
 
@@ -131,43 +80,29 @@ gateway and Java 21 for Keycloak. UBI and its RPM tooling exist only in Keycloak
 build stage. Neither runtime contains a shell or package manager. Keycloak starts
 directly in Java; use `JAVA_TOOL_OPTIONS` for additional JVM options and keep
 `start --optimized` for server startup.
-Base distro major/minor upgrades, action updates, and Go FIPS module upgrades require
-review. Dependabot handles pinned GitHub Action updates.
+Base distro major/minor upgrades and Go FIPS module upgrades require manual review.
 
-Vulnerabilities with an available upstream fix, at every severity, block publication;
-the gate sets `ignore-unfixed`. Findings with no fix — currently Debian base-OS packages
-in both distroless images — are kept in each run's scan artifacts and in
-`compliance/vulnerability-findings.csv`, and reviewed there instead of blocking. The
+Before publication, manually scan both architectures and resolve every vulnerability
+with an available upstream fix. Findings with no fix — currently Debian base-OS
+packages in both distroless images — are tracked in
+`compliance/vulnerability-findings.csv`. The
 only explicit exclusion is GO-2026-5932 on the gateway binary: the
 advisory concerns OpenPGP, which is absent from its target-platform dependency graph.
 Every gateway build and the smoke test enforce that absence. If OpenPGP is introduced,
 the build fails before scanning. The evidence is retained in the image at
 `/usr/share/ourimageshardened/packages.txt`. `.trivyignore-oauth2-proxy.yaml` scopes
 the exclusion to that finding, package, and binary path; it is never applied to Keycloak.
-The unfiltered JSON report remains available in each workflow run’s scan artifacts.
-A clean scan does not establish compliance.
+Retain the unfiltered scan report with the release evidence. A clean scan does not
+establish compliance.
 The gateway applies explicitly pinned `golang.org/x/crypto` and gRPC security updates
 from `go_security_updates` in the lock, verified through Go's checksum database.
 These pins require review when upstream dependencies change. Keycloak also applies checksum-pinned
 Netty 4.1.137.Final, OpenTelemetry API/context/common 1.62.0, and SQL Server JDBC
 13.4.0.jre11 updates before augmentation. The exact artifacts are recorded in
-`keycloak_security_updates`; review them when updating Keycloak. Keycloak's distroless runtime leaves build tooling outside the final image. Upstream vulnerabilities with an available fix must be taken before a release can publish.
-Native build jobs have read-only repository permissions. Publication jobs download
-the tested artifacts and never execute application images or untrusted PR code.
-
-Every published architecture image is signed and carries a keyless Cosign SBOM
-attestation, both bound to the workflow's GitHub OIDC identity. These need no
-signing key or repository secret and work on a user-owned private repo. The
-final multi-platform index is signed after assembly. Local builds are unsigned
-until published by this workflow.
-
-GitHub-native artifact attestations — SLSA build provenance and a second SBOM
-attestation — additionally run per architecture, but GitHub only issues them for
-a public repo or an org/Enterprise plan, so they self-skip on a user-owned
-private repo. The Cosign SBOM attestation above does not depend on that.
-
-Verify the GitHub workflow identity, issuer, and exact digest when consuming
-signatures or attestations. They prove publisher identity, not compliance.
+`keycloak_security_updates`; review them when updating Keycloak. Keycloak's distroless
+runtime leaves build tooling outside the final image. Upstream vulnerabilities with an
+available fix must be taken before a release can publish. Signing, SBOM generation,
+attestation, registry publication, and verification are operator responsibilities.
 
 ## Deployment
 
@@ -204,17 +139,15 @@ administrator credentials after initial setup. Do not use `start-dev` in product
 
 ## Verification limits
 
-CI builds each image natively from locked inputs, runs the repository unit tests,
-smoke-tests the built image under the production runtime restrictions, and blocks any
-finding with an available fix before publishing signatures and a Cosign SBOM
-attestation, plus GitHub-native SLSA provenance where GitHub supports it. The
-smoke test checks the fixed non-root identity, that the image starts read-only with no
+The local test and smoke commands verify locked build inputs and runtime behavior, but
+they are not run automatically. The smoke test checks the fixed non-root identity,
+that the image starts read-only with no
 capabilities, the gateway's FIPS build flags and OpenPGP absence, and that Keycloak
 reaches BCFIPS Approved Mode. It does not exercise OIDC login, database TLS, HTTP
 routing, or the FIPS qualification of the host.
 
 Before production, run the checklist in `DEPLOY-RAILWAY.md` against an isolated test
-database and users. No database container or production credentials are used by CI.
+database and users. The supplied tests use no database container or production credentials.
 
 ## Attribution and disclaimer
 
@@ -230,7 +163,7 @@ library. Each stays under its own license inside the images. The full list is in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). This project is not affiliated
 with, endorsed by, or supported by any of them, Red Hat, or the CNCF.
 
-The original content of this repository — the Dockerfiles, scripts, workflows,
+The original content of this repository — the Dockerfiles, scripts,
 configuration, and documentation authored here — is **not open source and carries
 no license**. It is published for transparency only; see [LICENSE](LICENSE). Do
 not treat its availability as permission to reuse it, and do not treat anything in

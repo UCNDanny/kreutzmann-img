@@ -12,9 +12,8 @@ projects below, Red Hat, the CNCF, the Cloud Native Computing Foundation, or the
 Eclipse Foundation.
 
 Exact versions, source URLs, and checksums for every component are in
-`dependencies.lock.json`. Each published image also carries an SBOM listing its
-full dependency set; consult it for the transitive libraries that upstream
-projects vendor.
+`dependencies.lock.json`. Generate and retain an SBOM when publishing images; consult
+it for the transitive libraries that upstream projects vendor.
 
 ## Applications
 
@@ -25,7 +24,7 @@ projects vendor.
 
 oauth2-proxy vendors many Go modules and Keycloak bundles many Java libraries;
 those retain their own licenses (variously MIT, BSD, Apache-2.0, EPL, and
-others). The per-image SBOM is the authoritative list.
+others). A generated per-image SBOM is the authoritative list.
 
 ## Pinned security updates and crypto providers
 

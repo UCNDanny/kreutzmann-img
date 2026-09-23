@@ -24,10 +24,6 @@ class RepositoryTests(unittest.TestCase):
             for key, value in args.items():
                 if key.endswith('SHA256'):
                     self.assertRegex(value, r'^[a-f0-9]{64}$')
-    def test_actions_are_commit_pinned(self):
-        for path in (ROOT / '.github/workflows').glob('*.yml'):
-            for ref in re.findall(r'uses:\s*(\S+)', path.read_text()):
-                self.assertRegex(ref, r'^[\w-]+/[\w-]+@[a-f0-9]{40}$')
     def test_keycloak_security_update_replacements_are_jars(self):
         lock = json.loads((ROOT / 'dependencies.lock.json').read_text())
         for update in lock['keycloak_security_updates']:
