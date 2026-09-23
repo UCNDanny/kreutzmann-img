@@ -17,7 +17,7 @@ operating environments and approved use. No badges or compliance labels are emit
 | Restricted temporary storage | Owned bounded tmpfs with noexec/nosuid/nodev | Compose and smoke test |
 | Verified build inputs | Digest-pinned bases and checksum-pinned archives/JARs | Distroless runtime digests in dependencies.lock.json |
 | Authenticated database TLS | Explicit JDBC verify-full + CA path | Requires live certificate/hostname test |
-| Supply-chain evidence | Digest/checksum-pinned inputs and enforced OpenPGP non-applicability | Operator must scan, sign, attest, and retain release evidence manually |
+| Supply-chain evidence | Native builds, fix-available CVE gate at all severities, enforced OpenPGP non-applicability, Cosign signing + SBOM attestation on every image; GitHub-native SLSA provenance only on a public/Enterprise repo | GitHub Actions must run in user's repo |
 | Public access boundary | Private upstreams, only gateway app domain | Operator must verify Railway exposure |
 
 These are descriptive engineering controls, not invented CIS/STIG control IDs.

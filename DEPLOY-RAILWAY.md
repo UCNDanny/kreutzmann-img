@@ -12,7 +12,7 @@ FIPS qualification and CIS/STIG host controls remain unverified.
   a tested backup/restore process. Confirm the PostgreSQL version is supported by Keycloak.
 - The external database certificate matches the JDBC hostname. Its trust anchor
   is known. `sslmode=require` alone does not verify server identity.
-- Manually built, scanned, published, and verified image digests.
+- Published image digests from your repository's successful release workflow.
 
 Public CA certificates and tooling need no purchase. Hosting can incur charges.
 Railway handles public certificate issuance/renewal. Verify the actual issuer if
