@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / 'dependencies.lock.json'
+PREVIEW_SOURCE = 'ghcr.io/ucndanny/keycloak-preview:latest'
 
 def sync_base_defaults(lock):
     for image in ('keycloak', 'oauth2-proxy'):
@@ -131,9 +132,12 @@ def build_args(image):
                          'CRYPTO_VERSION': d['go_security_updates']['crypto'],
                          'GRPC_VERSION': d['go_security_updates']['grpc'],
                          'SOURCE_SHA256': o['sha256'], 'GOFIPS140': d['go_fips_module']}
-    k = d['keycloak']
-    args = common | {'UBI_IMAGE': d['bases']['ubi'], 'JAVA_IMAGE': d['bases']['java'], 'VERSION': k['version'],
-                     'SOURCE_URL': k['url'], 'SOURCE_SHA256': k['sha256']}
+    args = common | {'UBI_IMAGE': d['bases']['ubi'], 'JAVA_IMAGE': d['bases']['java']}
+    if image == 'keycloak-preview':
+        args |= {'VERSION': 'preview-org', 'PREVIEW_IMAGE': PREVIEW_SOURCE}
+    else:
+        k = d['keycloak']
+        args |= {'VERSION': k['version'], 'SOURCE_URL': k['url'], 'SOURCE_SHA256': k['sha256']}
     for name, provider in d['bcfips'].items():
         key = name.replace('-', '_').upper()
         args[key + '_URL'] = provider['url']
@@ -143,7 +147,8 @@ def build_args(image):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--update', action='store_true')
-    parser.add_argument('--build', choices=['oauth2-proxy', 'keycloak'])
+    parser.add_argument('--build', choices=['oauth2-proxy', 'keycloak', 'keycloak-preview'])
+    parser.add_argument('--preview-image', help='digest-pinned preview source; resolved from the tag if omitted')
     parser.add_argument('--tag')
     parser.add_argument('--platform', default='linux/arm64' if os.uname().machine == 'arm64' else 'linux/amd64')
     args = parser.parse_args()
@@ -152,6 +157,9 @@ if __name__ == '__main__':
     if args.build:
         command = ['docker', 'buildx', 'build', '--load', '--platform', args.platform,
                    '-f', str(ROOT / ('Dockerfile.' + args.build)), '-t', args.tag or ('kreutzmann-img/' + args.build + ':local')]
-        for key, value in build_args(args.build).items():
+        build = build_args(args.build)
+        if args.build == 'keycloak-preview':
+            build['PREVIEW_IMAGE'] = args.preview_image or digest_image(PREVIEW_SOURCE)
+        for key, value in build.items():
             command += ['--build-arg', f'{key}={value}']
         subprocess.run(command + [str(ROOT)], check=True)
