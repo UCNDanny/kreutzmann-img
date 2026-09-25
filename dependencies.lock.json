@@ -155,6 +155,11 @@
       "file": "io.opentelemetry.opentelemetry-common-1.57.0.jar",
       "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-common/1.62.0/opentelemetry-common-1.62.0.jar",
       "sha256": "d6310bebde67d65c1519696728d8604005315ed08ab14071956fc0826fd71815"
+    },
+    {
+      "file": "org.freemarker.freemarker-2.3.32.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/freemarker/freemarker/2.3.35/freemarker-2.3.35.jar",
+      "sha256": "0fac87dddd78f1223139e8ef88e819c7f483c0a3835cdf5982ad5e4576d1d896"
     }
   ]
 }
