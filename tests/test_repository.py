@@ -15,7 +15,9 @@ class RepositoryTests(unittest.TestCase):
         for image in lock['bases'].values():
             self.assertRegex(image, r'@sha256:[a-f0-9]{64}$')
         self.assertRegex(lock['go_fips_module'], r'^v\d+\.\d+\.\d+$')
-        for name in ('oauth2-proxy', 'keycloak'):
+        self.assertRegex(lock['keycloak_preview']['image'], r'@sha256:[a-f0-9]{64}$')
+        self.assertRegex(lock['keycloak_preview']['revision'], r'^[a-f0-9]{40}$')
+        for name in module.IMAGES:
             args = module.build_args(name)
             dockerfile = (ROOT / ('Dockerfile.' + name)).read_text()
             declared = set(re.findall(r'^ARG (\w+)', dockerfile, re.M))
