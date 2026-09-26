@@ -38,7 +38,7 @@ assert version
 print(version)
 
 # 3. FIPS build posture.
-if image_name == 'keycloak':
+if image_name != 'oauth2-proxy':
     config = docker('run', '--rm', *restrictions, image, 'show-config')
     assert 'fips' in config and 'postgres' in config, config
     started = subprocess.run(

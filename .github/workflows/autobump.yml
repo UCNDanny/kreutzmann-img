@@ -33,8 +33,10 @@ jobs:
             dependencies.lock.json
             Dockerfile.keycloak
             Dockerfile.oauth2-proxy
+            Dockerfile.keycloak-preview-hardened
           body: |
-            Updates stable oauth2-proxy and Keycloak releases, compatible Go patches,
+            Updates stable oauth2-proxy and Keycloak releases, the keycloak-preview
+            source digest, compatible Go patches,
             Keycloak-declared BCFIPS providers, and pinned base-image digests.
             Review cryptographic-module validation conditions before merging.
             Go FIPS module version is deliberately not auto-upgraded.
