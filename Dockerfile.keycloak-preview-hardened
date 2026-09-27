@@ -28,6 +28,9 @@ ADD --checksum=sha256:${BCUTIL_FIPS_SHA256} ${BCUTIL_FIPS_URL} /opt/keycloak/pro
 RUN chmod 0644 /opt/keycloak/providers/*.jar \
     && touch -m --date=@1700000000 /opt/keycloak/providers/*.jar
 ENV KC_DB=postgres KC_HEALTH_ENABLED=true KC_METRICS_ENABLED=true KC_FEATURES=fips KC_FIPS_MODE=strict
+COPY dependencies.lock.json /tmp/dependencies.lock.json
+COPY scripts/keycloak-security-updates.py /tmp/keycloak-security-updates.py
+RUN python3 /tmp/keycloak-security-updates.py
 RUN /opt/keycloak/bin/kc.sh build
 
 COPY scripts/KeycloakLauncher.java /tmp/KeycloakLauncher.java
