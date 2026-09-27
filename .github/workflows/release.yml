@@ -85,6 +85,7 @@ jobs:
       id-token: write
       attestations: write
     strategy:
+      fail-fast: false
       matrix:
         image: [oauth2-proxy, keycloak, keycloak-preview-hardened]
         arch: [amd64, arm64]
