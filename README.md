@@ -48,11 +48,12 @@ Images are published as:
 
 - `ghcr.io/<lowercase-owner>/oauth2-proxy`
 - `ghcr.io/<lowercase-owner>/keycloak`
+- `ghcr.io/<lowercase-owner>/keycloak-preview-hardened`
 
 Each `index` job prints a deployable `@sha256:...` digest to the workflow summary.
 Every publish to `main` also refreshes two movable tags per image: `:latest` and
 `:<upstream-version>` (for example `:7.15.4` for oauth2-proxy, `:26.7.3` for
-Keycloak). Both move whenever the image is rebuilt — including base-image CVE
+Keycloak, the source commit for `keycloak-preview-hardened`). Both move whenever the image is rebuilt — including base-image CVE
 patches that do not change the upstream version — so pin the `@sha256:...` digest
 for anything that must be reproducible. Immutable per-run tags encode source SHA,
 run ID, and run attempt; architecture tags add `-amd64` or `-arm64`.
@@ -93,7 +94,9 @@ python3 -m unittest discover -s tests -v
 python3 scripts/dependencies.py --build oauth2-proxy
 python3 scripts/dependencies.py --build keycloak
 python3 scripts/smoke.py oauth2-proxy
+python3 scripts/dependencies.py --build keycloak-preview-hardened
 python3 scripts/smoke.py keycloak
+python3 scripts/smoke.py keycloak-preview-hardened
 ```
 
 The default platform matches the local machine. To build AMD64 explicitly:
@@ -151,7 +154,9 @@ from `go_security_updates` in the lock, verified through Go's checksum database.
 These pins require review when upstream dependencies change. Keycloak also applies checksum-pinned
 Netty 4.1.137.Final, OpenTelemetry API/context/common 1.62.0, and SQL Server JDBC
 13.4.0.jre11 updates before augmentation. The exact artifacts are recorded in
-`keycloak_security_updates`; review them when updating Keycloak. Keycloak's distroless runtime leaves build tooling outside the final image. Upstream vulnerabilities with an available fix must be taken before a release can publish.
+`keycloak_security_updates`; review them when updating Keycloak. `keycloak-preview-hardened` applies the same hardening to
+`/opt/keycloak` from the digest-pinned `keycloak_preview.image` (built from the Keycloak fork's `main`),
+which autobump refreshes; its bundled libraries already supersede these pins, so none are applied to it. Keycloak's distroless runtime leaves build tooling outside the final image. Upstream vulnerabilities with an available fix must be taken before a release can publish.
 Native build jobs have read-only repository permissions. Publication jobs download
 the tested artifacts and never execute application images or untrusted PR code.
 
