@@ -23,8 +23,8 @@
     "sha256": "04823c336b797a7e18889a44262a7a64e6bf624cbbcc518c85e2622176ff2eee"
   },
   "keycloak_preview": {
-    "image": "ghcr.io/ucndanny/keycloak-preview:latest@sha256:1d27e654b9550e1a519dc26e7de9d243255363fc5fd3f90391fd8aa03c76ae45",
-    "revision": "d41af941b78c6e902178d521831f73a89de38846"
+    "image": "ghcr.io/ucndanny/keycloak-preview:latest@sha256:b4ea0702d3f9ab160040c526e287a8c7776dfe22fbcef1482beed5a6b4b983f8",
+    "revision": "a8043066fd42e1acf7c9fa0f89d4ec73b683a9e0"
   },
   "bcfips": {
     "bc-fips": {
@@ -162,6 +162,12 @@
     },
     {
       "file": "org.freemarker.freemarker-2.3.32.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/freemarker/freemarker/2.3.35/freemarker-2.3.35.jar",
+      "sha256": "0fac87dddd78f1223139e8ef88e819c7f483c0a3835cdf5982ad5e4576d1d896"
+    },
+    {
+      "file": "org.freemarker.freemarker-2.3.32.jar",
+      "replacement_file": "org.freemarker.freemarker-2.3.35.jar",
       "url": "https://repo.maven.apache.org/maven2/org/freemarker/freemarker/2.3.35/freemarker-2.3.35.jar",
       "sha256": "0fac87dddd78f1223139e8ef88e819c7f483c0a3835cdf5982ad5e4576d1d896"
     }
