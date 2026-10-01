@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [oauth2-proxy, keycloak, keycloak-preview-hardened]
+        image: [oauth2-proxy, keycloak]
         arch: [amd64, arm64]
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     timeout-minutes: 45
@@ -87,7 +87,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [oauth2-proxy, keycloak, keycloak-preview-hardened]
+        image: [oauth2-proxy, keycloak]
         arch: [amd64, arm64]
     steps:
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
@@ -174,7 +174,7 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        image: [oauth2-proxy, keycloak, keycloak-preview-hardened]
+        image: [oauth2-proxy, keycloak]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -185,7 +185,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      # Exact names: a "digest-keycloak-*" pattern would also match keycloak-preview-hardened.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: digest-${{ matrix.image }}-amd64
@@ -203,8 +202,7 @@ jobs:
           set -euo pipefail
           name="ghcr.io/${OWNER,,}/${IMAGE}"
           tag="sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          # The application version this image packages (the source commit for the
-          # preview), read from the reviewed lock via the same build args. ":latest"
+          # The application version this image packages, read from the reviewed lock via the same build args. ":latest"
           # and ":<version>" are movable pointers refreshed on every rebuild
           # (base-image CVE patches included); the "@sha256:..." digest is the only
           # immutable reference.
