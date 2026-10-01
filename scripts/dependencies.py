@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / 'dependencies.lock.json'
-IMAGES = ('oauth2-proxy', 'keycloak', 'keycloak-preview-hardened')
+IMAGES = ('oauth2-proxy', 'keycloak')
 
 def sync_base_defaults(lock):
     for image in IMAGES:
@@ -55,14 +55,6 @@ def digest_image(ref):
     if not re.fullmatch(r'sha256:[0-9a-f]{64}', result):
         raise ValueError(f'Invalid image digest for {ref}')
     return ref + '@' + result
-
-def preview_revision(ref):
-    image = json.loads(subprocess.check_output(['docker', 'buildx', 'imagetools', 'inspect', ref,
-                                                '--format', '{{json .Image}}'], text=True))
-    revisions = {config['config']['Labels']['org.opencontainers.image.revision'] for config in image.values()}
-    if len(revisions) != 1:
-        raise ValueError(f'Expected one source revision for {ref}, got {revisions}')
-    return revisions.pop()
 
 def osv_affected(module, version):
     body = json.dumps({'version': version, 'package': {'name': module, 'ecosystem': 'Go'}}).encode()
@@ -124,8 +116,6 @@ def update():
         url = f'https://repo.maven.apache.org/maven2/org/bouncycastle/{artifact}/{v}/{artifact}-{v}.jar'
         providers[artifact] = {'version': v, 'url': url, 'sha256': hashlib.sha256(fetch(url)).hexdigest()}
     lock['bcfips'] = providers
-    preview = digest_image(lock['keycloak_preview']['image'].split('@')[0])
-    lock['keycloak_preview'] = {'image': preview, 'revision': preview_revision(preview)}
     for name in ('static', 'ubi', 'ca', 'java'):
         lock['bases'][name] = digest_image(lock['bases'][name].split('@')[0])
     # Cryptographic module version is deliberately reviewed manually, never switched to "latest".
@@ -143,12 +133,8 @@ def build_args(image):
                          'GRPC_VERSION': d['go_security_updates']['grpc'],
                          'SOURCE_SHA256': o['sha256'], 'GOFIPS140': d['go_fips_module']}
     args = common | {'UBI_IMAGE': d['bases']['ubi'], 'JAVA_IMAGE': d['bases']['java']}
-    if image == 'keycloak':
-        k = d['keycloak']
-        args |= {'VERSION': k['version'], 'SOURCE_URL': k['url'], 'SOURCE_SHA256': k['sha256']}
-    else:
-        p = d['keycloak_preview']
-        args |= {'VERSION': p['revision'], 'SOURCE_IMAGE': p['image']}
+    k = d['keycloak']
+    args |= {'VERSION': k['version'], 'SOURCE_URL': k['url'], 'SOURCE_SHA256': k['sha256']}
     for name, provider in d['bcfips'].items():
         key = name.replace('-', '_').upper()
         args[key + '_URL'] = provider['url']
