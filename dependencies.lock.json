@@ -12,15 +12,15 @@
     "java": "gcr.io/distroless/java21-debian13:nonroot@sha256:0a1f5a75661918de9c0813f287f651c3bf2d6dd752eada5f084eb0c1f14ced9e"
   },
   "oauth2_proxy": {
-    "version": "7.15.4",
-    "commit": "81ff034fe2ff3246e670c694b02e3267d1ae46bc",
-    "url": "https://codeload.github.com/oauth2-proxy/oauth2-proxy/tar.gz/81ff034fe2ff3246e670c694b02e3267d1ae46bc",
-    "sha256": "12af844d3fa3b53693e4dd6874fc9ca2861d1eee1c79678c623cab906b944d1f"
+    "version": "7.15.5",
+    "commit": "bea3f04bf87b93f5354f392fe2216a88e6031350",
+    "url": "https://codeload.github.com/oauth2-proxy/oauth2-proxy/tar.gz/bea3f04bf87b93f5354f392fe2216a88e6031350",
+    "sha256": "4b62ea81dce2014981fa62e19cf1c2c03400de1c3e6a8107b57cc6190285e133"
   },
   "keycloak": {
-    "version": "26.7.4",
-    "url": "https://github.com/keycloak/keycloak/releases/download/26.7.4/keycloak-26.7.4.tar.gz",
-    "sha256": "04823c336b797a7e18889a44262a7a64e6bf624cbbcc518c85e2622176ff2eee"
+    "version": "26.8.0",
+    "url": "https://github.com/keycloak/keycloak/releases/download/26.8.0/keycloak-26.8.0.tar.gz",
+    "sha256": "9e41da899f838a58cd510fc98ed4f7cadc715aed5683e42aca20a0c9a2a3980a"
   },
   "keycloak_preview": {
     "image": "ghcr.io/ucndanny/keycloak-preview:latest@sha256:b4ea0702d3f9ab160040c526e287a8c7776dfe22fbcef1482beed5a6b4b983f8",
@@ -33,19 +33,19 @@
       "sha256": "f55fc476ede820d5c03fe87e6ced5bb0095e1dc30b387445846a3ff0274f8c0e"
     },
     "bctls-fips": {
-      "version": "2.1.22",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bctls-fips/2.1.22/bctls-fips-2.1.22.jar",
-      "sha256": "688410563445e1a65ff33cb67842499f0788994d752c3df8f7ea4a0d40ddbf50"
+      "version": "2.1.25",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bctls-fips/2.1.25/bctls-fips-2.1.25.jar",
+      "sha256": "af604aa5b337725872651067a819ebc03aa298685572b0b2ad5343c786faad0a"
     },
     "bcpkix-fips": {
-      "version": "2.1.10",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-fips/2.1.10/bcpkix-fips-2.1.10.jar",
-      "sha256": "c4370064664d474d8681f55f302cfdade4cae0f3d798b10fd18b0ab8fbd6fed1"
+      "version": "2.1.13",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-fips/2.1.13/bcpkix-fips-2.1.13.jar",
+      "sha256": "cf161ba2f6b4505816f4661663b3e0771184a50ee5b178a0018c817b336f0e5c"
     },
     "bcutil-fips": {
-      "version": "2.1.5",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-fips/2.1.5/bcutil-fips-2.1.5.jar",
-      "sha256": "503aaf5c2c5b7c729547462efe13699b5f6dacf9be150b7c48bba974b793dc92"
+      "version": "2.1.8",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-fips/2.1.8/bcutil-fips-2.1.8.jar",
+      "sha256": "f44904f61552c823bcc3686a24052ee3135212d547754eaa2ff6532e210103cb"
     }
   },
   "keycloak_security_updates": [
