@@ -4,7 +4,10 @@ ARG CA_IMAGE=docker.io/library/alpine:3.23@sha256:85fe1e81d6758c208f3e1eed4338a1
 FROM --platform=$BUILDPLATFORM ${CA_IMAGE} AS ca
 RUN test -s /etc/ssl/certs/ca-certificates.crt
 
+FROM ${JAVA_IMAGE} AS runtime-base
+
 FROM ${UBI_IMAGE} AS build
+ARG TARGETARCH
 ARG SOURCE_URL
 ARG SOURCE_SHA256
 ARG BC_FIPS_URL
@@ -29,6 +32,9 @@ ENV KC_DB=postgres KC_HEALTH_ENABLED=true KC_METRICS_ENABLED=true KC_FEATURES=fi
 COPY dependencies.lock.json /tmp/dependencies.lock.json
 COPY scripts/keycloak-security-updates.py /tmp/keycloak-security-updates.py
 RUN python3 /tmp/keycloak-security-updates.py
+COPY --from=runtime-base /var/lib/dpkg/status.d /tmp/base-status.d
+COPY scripts/debian-security-updates.py /tmp/debian-security-updates.py
+RUN python3 /tmp/debian-security-updates.py
 RUN /opt/keycloak/bin/kc.sh build
 
 COPY scripts/KeycloakLauncher.java /tmp/KeycloakLauncher.java
@@ -40,6 +46,7 @@ RUN javac -d /opt/keycloak/lib /tmp/KeycloakLauncher.java \
 
 FROM ${JAVA_IMAGE}
 ARG VERSION
+COPY --from=build /opt/debian-security-updates/ /
 COPY --from=build /opt/keycloak /opt/keycloak
 COPY scripts/keycloak-java.options /opt/keycloak/conf/java.options
 COPY --from=ca /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/public-ca-bundle.pem

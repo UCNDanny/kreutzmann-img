@@ -25,8 +25,14 @@ advisory-specific assessment is still owed before any compliance claim.
 
 These are carried, not dismissed:
 
-- `python3 scripts/dependencies.py --update` refreshes the base digest. A release with
-  patched packages ships automatically once upstream publishes them.
+- The daily monitor workflow scans the published images and opens a `monitor` issue
+  as soon as a fix becomes available. `python3 scripts/dependencies.py --update`
+  refreshes the base digest once distroless publishes the fix.
+- Until then, a Debian fix can be pinned in `debian_security_updates` in
+  `dependencies.lock.json`: the checksum-pinned `.deb` from snapshot.debian.org is
+  overlaid onto the runtime base together with its dpkg status record. The build
+  fails once the base's installed version changes, so a pin is reviewed and removed
+  when distroless catches up.
 - Every workflow run uploads the unfiltered JSON report as a scan artifact, including
   when the gate fails on a fixable finding.
 - Review `compliance/vulnerability-findings.csv` when updating the base image.
