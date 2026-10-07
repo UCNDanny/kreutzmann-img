@@ -24,34 +24,32 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - name: Resolve published image names
-        id: images
+      # Same Trivy release as the trivy-action pin in release.yml.
+      - uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          version: v0.70.0
+      # A multi-platform tag resolves to one platform by default, so scan each one.
+      - name: Scan every published image and platform
         env:
           OWNER: ${{ github.repository_owner }}
-        run: echo "prefix=ghcr.io/${OWNER,,}" >> "$GITHUB_OUTPUT"
-      - name: Scan published oauth2-proxy
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ${{ steps.images.outputs.prefix }}/oauth2-proxy:latest
-          scanners: vuln
-          ignore-unfixed: true
-          trivyignores: .trivyignore-oauth2-proxy.yaml
-          format: json
-          output: oauth2-proxy.json
-          exit-code: '0'
-      - name: Scan published keycloak
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ${{ steps.images.outputs.prefix }}/keycloak:latest
-          scanners: vuln
-          ignore-unfixed: true
-          format: json
-          output: keycloak.json
-          exit-code: '0'
+        run: |
+          set -euo pipefail
+          for image in oauth2-proxy keycloak; do
+            ignore=()
+            [ "$image" = oauth2-proxy ] && ignore=(--ignorefile .trivyignore-oauth2-proxy.yaml)
+            for arch in amd64 arm64; do
+              trivy image --quiet --scanners vuln --ignore-unfixed --platform "linux/$arch" \
+                "${ignore[@]}" --format json --output "$image-$arch.json" \
+                "ghcr.io/${OWNER,,}/$image:latest"
+            done
+          done
       - name: Report upstream updates and fixable vulnerabilities
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/monitor.py oauth2-proxy=oauth2-proxy.json keycloak=keycloak.json > report.md
+        run: |
+          python3 scripts/monitor.py \
+            oauth2-proxy=oauth2-proxy-amd64.json oauth2-proxy=oauth2-proxy-arm64.json \
+            keycloak=keycloak-amd64.json keycloak=keycloak-arm64.json > report.md
       # One standing issue: opened when there is something to act on, commented on
       # whenever the report changes, and closed once everything is addressed.
       - name: Open, update, or close the monitor issue
