@@ -25,19 +25,19 @@ The workflows must be at the repository root to be discovered by GitHub.
 
 In GitHub:
 
-1. Add a `PR_BOT_TOKEN` secret: a fine-grained PAT with Actions, Contents, and
-   Pull requests read/write on this repository.
-2. Protect `main`; require the four native `build` matrix checks.
-3. Enable the 6-hourly update workflow. You can also run it manually in Actions.
-4. Ensure native `ubuntu-24.04-arm` runners are available for your repository/plan.
+1. Protect `main`; require the four native `build` matrix checks.
+2. Enable the daily monitor workflow (`monitor.yml`). You can also run it manually
+   in Actions. Watch the repository's issues to be notified of its reports.
+3. Ensure native `ubuntu-24.04-arm` runners are available for your repository/plan.
    Assign equivalent runners if necessary.
-5. Signing and the Cosign SBOM attestation always run. GitHub-native artifact
+4. Signing and the Cosign SBOM attestation always run. GitHub-native artifact
    attestations (SLSA provenance, second SBOM) additionally run only on a public
    repo or an org/Enterprise plan; a user-owned private repo skips just those.
 
-The updater opens its dependency PR with `PR_BOT_TOKEN`, so validation runs on it;
-a passing PR is squash-merged and the merge publishes from `main`. A failed build is
-retried once, then triggers a dependency refresh (`selfheal.yml`). For the first release, push these files to `main`,
+Nothing is updated automatically. The monitor checks upstream releases and base-image
+digests and scans the published `:latest` images daily. When there is something to act
+on, it opens a single `monitor` issue, comments whenever the report changes, and closes
+the issue once everything is addressed. For the first release, push these files to `main`,
 then open **Actions → Build, validate, and release** and wait for all jobs to finish.
 You can also select **Run workflow** on `main`. Each final `index` job prints the
 exact image digest to use in your service. Set the service image source to that
@@ -121,7 +121,7 @@ python3 scripts/dependencies.py --update
 ```
 
 This refreshes stable upstream releases and base digests and derives BCFIPS versions
-from Keycloak's release POM. Review changes, especially major releases and crypto
+from Keycloak's release POM. Run it when the monitor issue reports updates. Review changes, especially major releases and crypto
 provider changes. The Go FIPS module version stays explicitly pinned for manual review.
 The initial archive hashes are obtained from trusted HTTPS upstreams and then locked;
 this is not a substitute for upstream signature verification or a CMVP assessment.

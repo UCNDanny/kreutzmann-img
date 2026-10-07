@@ -75,7 +75,8 @@ def latest_go_module(module):
             return version
     raise ValueError(f'No unaffected stable version found for {module}')
 
-def update():
+def resolve():
+    """Return the lock with the newest verified upstream inputs, without writing it."""
     lock = json.loads(LOCK.read_text())
     lock['go_security_updates']['grpc'] = latest_go_module('google.golang.org/grpc')
     release = stable('oauth2-proxy/oauth2-proxy')
@@ -119,6 +120,10 @@ def update():
     for name in ('static', 'ubi', 'ca', 'java'):
         lock['bases'][name] = digest_image(lock['bases'][name].split('@')[0])
     # Cryptographic module version is deliberately reviewed manually, never switched to "latest".
+    return lock
+
+def update():
+    lock = resolve()
     LOCK.write_text(json.dumps(lock, indent=2) + '\n')
     sync_base_defaults(lock)
 

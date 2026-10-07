@@ -5,7 +5,7 @@
     "grpc": "v1.83.2"
   },
   "bases": {
-    "go": "docker.io/library/golang:1.26.8-bookworm@sha256:a688600ca24f8a4d3ca77f95b0dd40704a9fc787c826660eb7ba0b641b8b175d",
+    "go": "docker.io/library/golang:1.26.8-bookworm@sha256:dc9ad6c05acc7a88e5b71bde60a5fe3bd4b9f0db209011711b464107438a8107",
     "static": "gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3",
     "ubi": "registry.access.redhat.com/ubi9/ubi-minimal:9.7@sha256:907b68736aa798b2d38255b7aa070b2a70acb90803864a40f05d0ec47556ddd0",
     "ca": "docker.io/library/alpine:3.23@sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0",
@@ -44,5 +44,23 @@
       "sha256": "f44904f61552c823bcc3686a24052ee3135212d547754eaa2ff6532e210103cb"
     }
   },
-  "keycloak_security_updates": []
+  "keycloak_security_updates": [],
+  "debian_security_updates": [
+    {
+      "package": "libpng16-16t64",
+      "base_version": "1.6.48-1+deb13u5",
+      "version": "1.6.48-1+deb13u6",
+      "advisory": "DSA-6537-1",
+      "debs": {
+        "amd64": {
+          "url": "https://snapshot.debian.org/archive/debian-security/20261001T183713Z/pool/updates/main/libp/libpng1.6/libpng16-16t64_1.6.48-1+deb13u6_amd64.deb",
+          "sha256": "0f8034d1c2547760430c81e8d87e5d6acd533a3493c80cf76dbecd0343b6773c"
+        },
+        "arm64": {
+          "url": "https://snapshot.debian.org/archive/debian-security/20261001T183713Z/pool/updates/main/libp/libpng1.6/libpng16-16t64_1.6.48-1+deb13u6_arm64.deb",
+          "sha256": "57177299a638e30032a7191cc32a1b25fe4de7565164d770685d6d7f56771317"
+        }
+      }
+    }
+  ]
 }

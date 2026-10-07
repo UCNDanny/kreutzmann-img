@@ -1,0 +1,85 @@
+name: Monitor dependencies and vulnerabilities
+on:
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: read
+  issues: write
+concurrency:
+  group: monitor
+  cancel-in-progress: false
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Resolve published image names
+        id: images
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "prefix=ghcr.io/${OWNER,,}" >> "$GITHUB_OUTPUT"
+      - name: Scan published oauth2-proxy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.images.outputs.prefix }}/oauth2-proxy:latest
+          scanners: vuln
+          ignore-unfixed: true
+          trivyignores: .trivyignore-oauth2-proxy.yaml
+          format: json
+          output: oauth2-proxy.json
+          exit-code: '0'
+      - name: Scan published keycloak
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.images.outputs.prefix }}/keycloak:latest
+          scanners: vuln
+          ignore-unfixed: true
+          format: json
+          output: keycloak.json
+          exit-code: '0'
+      - name: Report upstream updates and fixable vulnerabilities
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/monitor.py oauth2-proxy=oauth2-proxy.json keycloak=keycloak.json > report.md
+      # One standing issue: opened when there is something to act on, commented on
+      # whenever the report changes, and closed once everything is addressed.
+      - name: Open, update, or close the monitor issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TITLE: Dependency and vulnerability monitor
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh label create monitor --repo "$REPO" --color D93F0B \
+            --description 'Opened by the monitor workflow' 2>/dev/null || true
+          number=$(gh issue list --repo "$REPO" --label monitor --state open \
+            --json number --jq '.[0].number // empty')
+          if [ ! -s report.md ]; then
+            if [ -n "$number" ]; then
+              gh issue close "$number" --repo "$REPO" --comment "Nothing left to act on as of $RUN_URL."
+            fi
+            exit 0
+          fi
+          printf '\n\n_Last checked: %s_\n' "$RUN_URL" > footer.md
+          cat report.md footer.md > body.md
+          if [ -z "$number" ]; then
+            gh issue create --repo "$REPO" --title "$TITLE" --label monitor --body-file body.md
+          elif ! gh issue view "$number" --repo "$REPO" --json body --jq .body \
+              | sed '/^_Last checked:/,$d' | diff -qB - report.md >/dev/null; then
+            gh issue edit "$number" --repo "$REPO" --body-file body.md
+            gh issue comment "$number" --repo "$REPO" --body-file report.md
+          else
+            gh issue edit "$number" --repo "$REPO" --body-file body.md
+          fi
