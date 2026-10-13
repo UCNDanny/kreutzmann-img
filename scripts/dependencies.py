@@ -79,6 +79,7 @@ def resolve():
     """Return the lock with the newest verified upstream inputs, without writing it."""
     lock = json.loads(LOCK.read_text())
     lock['go_security_updates']['grpc'] = latest_go_module('google.golang.org/grpc')
+    lock['go_security_updates']['net'] = latest_go_module('golang.org/x/net')
     release = stable('oauth2-proxy/oauth2-proxy')
     tag = release['tag_name']
     if is_newer(tag, lock['oauth2_proxy']['version']):
@@ -136,6 +137,7 @@ def build_args(image):
                          'VERSION': o['version'], 'SOURCE_URL': o['url'],
                          'CRYPTO_VERSION': d['go_security_updates']['crypto'],
                          'GRPC_VERSION': d['go_security_updates']['grpc'],
+                         'NET_VERSION': d['go_security_updates']['net'],
                          'SOURCE_SHA256': o['sha256'], 'GOFIPS140': d['go_fips_module']}
     args = common | {'UBI_IMAGE': d['bases']['ubi'], 'JAVA_IMAGE': d['bases']['java']}
     k = d['keycloak']
