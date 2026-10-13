@@ -51,7 +51,7 @@ Images are published as:
 
 Each `index` job prints a deployable `@sha256:...` digest to the workflow summary.
 Every publish to `main` also refreshes two movable tags per image: `:latest` and
-`:<upstream-version>` (for example `:7.15.5` for oauth2-proxy, `:26.8.0` for
+`:<upstream-version>` (for example `:7.15.5` for oauth2-proxy, `:26.8.1` for
 Keycloak). Both move whenever the image is rebuilt — including base-image CVE
 patches that do not change the upstream version — so pin the `@sha256:...` digest
 for anything that must be reproducible. Immutable per-run tags encode source SHA,
@@ -146,10 +146,10 @@ the build fails before scanning. The evidence is retained in the image at
 the exclusion to that finding, package, and binary path; it is never applied to Keycloak.
 The unfiltered JSON report remains available in each workflow run’s scan artifacts.
 A clean scan does not establish compliance.
-The gateway applies explicitly pinned `golang.org/x/crypto` and gRPC security updates
+The gateway applies explicitly pinned `golang.org/x/crypto`, `golang.org/x/net` and gRPC security updates
 from `go_security_updates` in the lock, verified through Go's checksum database.
 These pins require review when upstream dependencies change. Keycloak can also apply checksum-pinned library replacements before augmentation, recorded in
-`keycloak_security_updates` in the lock. The list is currently empty because 26.8.0 already bundles the
+`keycloak_security_updates` in the lock. The list is currently empty because 26.8.1 already bundles the
 patched Netty, OpenTelemetry, SQL Server JDBC, FreeMarker, and BouncyCastle versions; add entries only
 when a fix lands upstream after a release. Keycloak's distroless runtime leaves build tooling outside the final image. Upstream vulnerabilities with an available fix must be taken before a release can publish.
 Native build jobs have read-only repository permissions. Publication jobs download
