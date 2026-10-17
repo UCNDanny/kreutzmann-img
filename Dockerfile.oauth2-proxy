@@ -1,5 +1,5 @@
 # Build through scripts/dependencies.py so all ARGs come from the reviewed lock.
-ARG GO_IMAGE=docker.io/library/golang:1.26.8-bookworm@sha256:dc9ad6c05acc7a88e5b71bde60a5fe3bd4b9f0db209011711b464107438a8107
+ARG GO_IMAGE=docker.io/library/golang:1.26.9-bookworm@sha256:d9c68c2c51161e12fd77e4c6320687c9cd86e1af1e3ad6e6cd63ff970641453c
 ARG STATIC_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
 ARG CA_IMAGE=docker.io/library/alpine:3.23@sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0
 FROM --platform=$BUILDPLATFORM ${CA_IMAGE} AS ca
@@ -13,6 +13,7 @@ ARG SOURCE_SHA256
 ARG GOFIPS140
 ARG CRYPTO_VERSION
 ARG GRPC_VERSION
+ARG NET_VERSION
 ARG TARGETOS
 ARG TARGETARCH
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local
@@ -20,7 +21,7 @@ WORKDIR /src
 ADD --checksum=sha256:${SOURCE_SHA256} ${SOURCE_URL} /tmp/source.tar.gz
 RUN tar -xzf /tmp/source.tar.gz --strip-components=1 -C /src
 # Apply reviewed security updates while retaining Go checksum-database validation.
-RUN go get golang.org/x/crypto@${CRYPTO_VERSION} google.golang.org/grpc@${GRPC_VERSION} \
+RUN go get golang.org/x/crypto@${CRYPTO_VERSION} golang.org/x/net@${NET_VERSION} google.golang.org/grpc@${GRPC_VERSION} \
     && go mod download && go mod verify
 RUN export GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOFIPS140=${GOFIPS140}; \
     go build -trimpath -buildvcs=false \
