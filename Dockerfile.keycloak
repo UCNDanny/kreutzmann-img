@@ -36,6 +36,8 @@ COPY --from=runtime-base /var/lib/dpkg/status.d /tmp/base-status.d
 COPY scripts/debian-security-updates.py /tmp/debian-security-updates.py
 RUN python3 /tmp/debian-security-updates.py
 RUN /opt/keycloak/bin/kc.sh build
+# Kreutzmann email theme; read at runtime, so it does not affect the optimized build.
+COPY themes/kreutzmann /opt/keycloak/themes/kreutzmann
 
 COPY scripts/KeycloakLauncher.java /tmp/KeycloakLauncher.java
 RUN javac -d /opt/keycloak/lib /tmp/KeycloakLauncher.java \

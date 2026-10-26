@@ -5,3 +5,5 @@
 !scripts/KeycloakLauncher.java
 !scripts/keycloak-java.options
 !scripts/keycloak-security-updates.py
+!themes/
+!themes/**
