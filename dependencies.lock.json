@@ -2,26 +2,26 @@
   "go_fips_module": "v1.0.0",
   "go_security_updates": {
     "crypto": "v0.58.0",
-    "grpc": "v1.84.0",
-    "net": "v0.61.0"
+    "grpc": "v1.85.0",
+    "net": "v0.62.0"
   },
   "bases": {
-    "go": "docker.io/library/golang:1.26.10-bookworm@sha256:632dff7351799a5a9954a48dc06670ade72ee44e8c351cdc0e5a57af2fea21af",
-    "static": "gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99",
+    "go": "docker.io/library/golang:1.26.10-bookworm@sha256:5de7c99eb78ca5e515a4c340235d0955ec5964a5071c492c15503d7c267da473",
+    "static": "gcr.io/distroless/static-debian13:nonroot@sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329",
     "ubi": "registry.access.redhat.com/ubi9/ubi-minimal:9.7@sha256:907b68736aa798b2d38255b7aa070b2a70acb90803864a40f05d0ec47556ddd0",
-    "ca": "docker.io/library/alpine:3.23@sha256:ff7f0c727dd796aa36787bfcd9a64bf35a6ce72a73451b3359fde849b6703d63",
-    "java": "gcr.io/distroless/java21-debian13:nonroot@sha256:a2aeb5a7a714cfe928b31fdf67b2d23f503ea6b9612705af062de22e0c50ba77"
+    "ca": "docker.io/library/alpine:3.23@sha256:f3d55900449227ae9e237ede521e7b665d53a253b42065ba90b9db9275e198ad",
+    "java": "gcr.io/distroless/java21-debian13:nonroot@sha256:b22857e939bd95abd69d9d747f0421a274f9f70855ecfc335f7d97f6eeef578d"
   },
   "oauth2_proxy": {
-    "version": "7.15.5",
-    "commit": "bea3f04bf87b93f5354f392fe2216a88e6031350",
-    "url": "https://codeload.github.com/oauth2-proxy/oauth2-proxy/tar.gz/bea3f04bf87b93f5354f392fe2216a88e6031350",
-    "sha256": "4b62ea81dce2014981fa62e19cf1c2c03400de1c3e6a8107b57cc6190285e133"
+    "version": "7.15.6",
+    "commit": "ea755ac07aa200acc22e02f95d25b91de6c9fe20",
+    "url": "https://codeload.github.com/oauth2-proxy/oauth2-proxy/tar.gz/ea755ac07aa200acc22e02f95d25b91de6c9fe20",
+    "sha256": "94efdcf4199c8a7d3a9e6f7cd733dc4ac6817101a9880755bd21b87b5f1c6a0e"
   },
   "keycloak": {
-    "version": "26.8.1",
-    "url": "https://github.com/keycloak/keycloak/releases/download/26.8.1/keycloak-26.8.1.tar.gz",
-    "sha256": "4e2740b181faa2ea623a1c2ecf00855935311e546046e2f857615a47ed24cbe8"
+    "version": "26.8.2",
+    "url": "https://github.com/keycloak/keycloak/releases/download/26.8.2/keycloak-26.8.2.tar.gz",
+    "sha256": "dd124787283918bc597628887168333465ee2a811a389e0003569e52be7e487f"
   },
   "bcfips": {
     "bc-fips": {
@@ -45,6 +45,103 @@
       "sha256": "f44904f61552c823bcc3686a24052ee3135212d547754eaa2ff6532e210103cb"
     }
   },
-  "keycloak_security_updates": [],
+  "keycloak_security_updates": [
+    {
+      "file": "com.google.guava.guava-33.6.0-jre.jar",
+      "replacement_file": "com.google.guava.guava-33.7.2-jre.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar",
+      "sha256": "b530942257fb935f8b2cfaa5f8eb5bd59c555fd8e8d01b8ce98912e077ea606c"
+    },
+    {
+      "file": "org.mariadb.jdbc.mariadb-java-client-3.5.10.jar",
+      "replacement_file": "org.mariadb.jdbc.mariadb-java-client-3.5.11.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.5.11/mariadb-java-client-3.5.11.jar",
+      "sha256": "42604178b9e57ec08ee0035079961516f086e455d0141f0b22c6eff29fb2fff4"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-api-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-api-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api/1.67.0/opentelemetry-api-1.67.0.jar",
+      "sha256": "538d1dff2f9a37aecbc0ef98fd17273a3affb058e734e6763a3a07a38a5fdc59"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-context-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-context-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-context/1.67.0/opentelemetry-context-1.67.0.jar",
+      "sha256": "40fb813fb5e27ec2691daa29c81b572b5b1541ef9b41e62490c3ee3e6407c55e"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-common-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-common-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-common/1.67.0/opentelemetry-common-1.67.0.jar",
+      "sha256": "da97bdb395418e16ecdcbe7ad3497f45b9e767ceda4ae7e86133e7a757ac377f"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-sdk-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-sdk-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk/1.67.0/opentelemetry-sdk-1.67.0.jar",
+      "sha256": "52a8f599a368a3d62185e37053f6a53175d6fbe3ecc1d565baba13b1a854267f"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-sdk-common-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-sdk-common-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-common/1.67.0/opentelemetry-sdk-common-1.67.0.jar",
+      "sha256": "628a4c00db9561ff4c608a650d5e7fd66a1e153ccdf1ba3cdc5ac0b7c6518fea"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-sdk-trace-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-sdk-trace-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-trace/1.67.0/opentelemetry-sdk-trace-1.67.0.jar",
+      "sha256": "14d9615c8a5dcf471dcbb74902b771dcfa8656b755ac38dce904042289ccd198"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-sdk-metrics-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-sdk-metrics-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-metrics/1.67.0/opentelemetry-sdk-metrics-1.67.0.jar",
+      "sha256": "c157ff10da59a87a57e5236d9f3290792d9b749433be5e5b449a7d1604c320a9"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-sdk-logs-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-sdk-logs-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-logs/1.67.0/opentelemetry-sdk-logs-1.67.0.jar",
+      "sha256": "dd0f0b625e08787af49d7e270abc6def4c2eabc2f18f5f145b7924024a3311e3"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-sdk-extension-autoconfigure-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-sdk-extension-autoconfigure-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure/1.67.0/opentelemetry-sdk-extension-autoconfigure-1.67.0.jar",
+      "sha256": "09021cf4e41f081e11e1c00577fe03b98db0ae7fd5f73eaf4020e760fa0edb7e"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-sdk-extension-autoconfigure-spi-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-sdk-extension-autoconfigure-spi-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure-spi/1.67.0/opentelemetry-sdk-extension-autoconfigure-spi-1.67.0.jar",
+      "sha256": "41eb19f6caf2c655ac3139d331f5c34283f2efdb0f0b0e58765a6cc9e27f66bc"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-exporter-common-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-exporter-common-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-common/1.67.0/opentelemetry-exporter-common-1.67.0.jar",
+      "sha256": "eb61aab6d20bf105102dfa061b478b659cec17e82a50969898046456768ba09b"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-exporter-otlp-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-exporter-otlp-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp/1.67.0/opentelemetry-exporter-otlp-1.67.0.jar",
+      "sha256": "6724a9c8f9f42de757682c6194c48d9fee4670cd19a85c37954eba526c58b836"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-exporter-otlp-common-1.62.0.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-exporter-otlp-common-1.67.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-exporter-otlp-common/1.67.0/opentelemetry-exporter-otlp-common-1.67.0.jar",
+      "sha256": "75530ab4d93e6fdef478d3e112713337625e70a63df357e6e7b9060c13788015"
+    },
+    {
+      "file": "io.opentelemetry.opentelemetry-api-incubator-1.62.0-alpha.jar",
+      "replacement_file": "io.opentelemetry.opentelemetry-api-incubator-1.67.0-alpha.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/opentelemetry/opentelemetry-api-incubator/1.67.0-alpha/opentelemetry-api-incubator-1.67.0-alpha.jar",
+      "sha256": "fea3d78726e49620168c3f6194ff491edfd1ec89b2df06fd5d5b73e55d74a342"
+    }
+  ],
   "debian_security_updates": []
 }
