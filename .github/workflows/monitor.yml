@@ -34,9 +34,9 @@ jobs:
           OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
-          for image in oauth2-proxy keycloak; do
+          for image in oauth2-proxy keycloak openbao; do
             ignore=()
-            [ "$image" = oauth2-proxy ] && ignore=(--ignorefile .trivyignore-oauth2-proxy.yaml)
+            [ "$image" != keycloak ] && ignore=(--ignorefile ".trivyignore-$image.yaml")
             for arch in amd64 arm64; do
               trivy image --quiet --scanners vuln --ignore-unfixed --platform "linux/$arch" \
                 "${ignore[@]}" --format json --output "$image-$arch.json" \
@@ -49,7 +49,8 @@ jobs:
         run: |
           python3 scripts/monitor.py \
             oauth2-proxy=oauth2-proxy-amd64.json oauth2-proxy=oauth2-proxy-arm64.json \
-            keycloak=keycloak-amd64.json keycloak=keycloak-arm64.json > report.md
+            keycloak=keycloak-amd64.json keycloak=keycloak-arm64.json \
+            openbao=openbao-amd64.json openbao=openbao-arm64.json > report.md
       # One standing issue: opened when there is something to act on, commented on
       # whenever the report changes, and closed once everything is addressed.
       - name: Open, update, or close the monitor issue

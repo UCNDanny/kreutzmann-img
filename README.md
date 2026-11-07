@@ -1,6 +1,6 @@
 # kreutzmann-img
 
-Own-image builds of oauth2-proxy and Keycloak for `linux/amd64` and `linux/arm64`.
+Own-image builds of oauth2-proxy, Keycloak and OpenBao for `linux/amd64` and `linux/arm64`.
 The GitHub Actions pipeline builds on native runners, tests and scans before
 publication, and publishes signed multi-platform images to GHCR.
 
@@ -25,7 +25,7 @@ The workflows must be at the repository root to be discovered by GitHub.
 
 In GitHub:
 
-1. Protect `main`; require the four native `build` matrix checks.
+1. Protect `main`; require the six native `build` matrix checks.
 2. Enable the daily monitor workflow (`monitor.yml`). You can also run it manually
    in Actions. Watch the repository's issues to be notified of its reports.
 3. Ensure native `ubuntu-24.04-arm` runners are available for your repository/plan.
@@ -48,6 +48,7 @@ Images are published as:
 
 - `ghcr.io/<lowercase-owner>/oauth2-proxy`
 - `ghcr.io/<lowercase-owner>/keycloak`
+- `ghcr.io/<lowercase-owner>/openbao`
 
 Each `index` job prints a deployable `@sha256:...` digest to the workflow summary.
 Every publish to `main` also refreshes two movable tags per image: `:latest` and
@@ -92,8 +93,10 @@ Setup and build commands do not run tests. To run checks or build individual ima
 python3 -m unittest discover -s tests -v
 python3 scripts/dependencies.py --build oauth2-proxy
 python3 scripts/dependencies.py --build keycloak
+python3 scripts/dependencies.py --build openbao
 python3 scripts/smoke.py oauth2-proxy
 python3 scripts/smoke.py keycloak
+python3 scripts/smoke.py openbao
 ```
 
 The default platform matches the local machine. To build AMD64 explicitly:
@@ -101,6 +104,7 @@ The default platform matches the local machine. To build AMD64 explicitly:
 ```sh
 python3 scripts/dependencies.py --build oauth2-proxy --platform linux/amd64 --tag kreutzmann-img/oauth2-proxy:amd64
 python3 scripts/dependencies.py --build keycloak --platform linux/amd64 --tag kreutzmann-img/keycloak:amd64
+python3 scripts/dependencies.py --build openbao --platform linux/amd64 --tag kreutzmann-img/openbao:amd64
 ```
 
 Build through this script so all required build arguments come from the lock.
@@ -110,6 +114,18 @@ with `latest`.
 Upstream source archives are downloaded from locked URLs. Keycloak also copies
 its launcher, JVM options, security-update script, and lock from this repository.
 Neither build needs deployment secrets.
+
+### Before every commit or pull request
+
+Run `make check` and open the pull request only when it ends with `Preflight passed.`
+It runs what the release workflow runs, for every image on both platforms: unit tests,
+build, smoke test, and the fixable-vulnerability gate with the same settings. It checks
+all images, not only the one a change touches: a fix published upstream since the last
+release can make an untouched image fail the gate. AMD64 runs under emulation on an
+Apple Silicon Mac. Compiling OpenBao needs more than Docker Desktop's 4 GB default
+(8 GB recommended); the check stops early with less. `--image` and `--platform` narrow a run while working, but the
+full run comes before the pull request. The pull request template lists the remaining
+manual checks.
 
 ## Updates and supply chain
 
@@ -126,28 +142,35 @@ provider changes. The Go FIPS module version stays explicitly pinned for manual 
 The initial archive hashes are obtained from trusted HTTPS upstreams and then locked;
 this is not a substitute for upstream signature verification or a CMVP assessment.
 
-Both runtime images use digest-pinned distroless Debian 13 bases: static for the
-gateway and Java 21 for Keycloak. UBI and its RPM tooling exist only in Keycloak's
-build stage. Neither runtime contains a shell or package manager. Keycloak starts
+All runtime images use digest-pinned distroless Debian 13 bases: static for the
+gateway and OpenBao, Java 21 for Keycloak. UBI and its RPM tooling exist only in Keycloak's
+build stage. No runtime contains a shell or package manager. Keycloak starts
 directly in Java; use `JAVA_TOOL_OPTIONS` for additional JVM options and keep
 `start --optimized` for server startup.
+
+OpenBao is built without its web UI and has no dev-mode default. It runs
+`server -config=/openbao/config`, so mount the configuration there. Integrated
+storage belongs on a volume at `/openbao/data`, which the image creates for UID 65532.
+The CLI is the same binary: `docker exec <container> bao status`.
 Base distro major/minor upgrades, action updates, and Go FIPS module upgrades require
 review. Dependabot handles pinned GitHub Action updates.
 
 Vulnerabilities with an available upstream fix, at every severity, block publication;
 the gate sets `ignore-unfixed`. Findings with no fix — currently Debian base-OS packages
-in both distroless images — are kept in each run's scan artifacts and in
+in the distroless images and `go-jose/v3` in OpenBao — are kept in each run's scan artifacts and in
 `compliance/vulnerability-findings.csv`, and reviewed there instead of blocking. The
-only explicit exclusion is GO-2026-5932 on the gateway binary: the
-advisory concerns OpenPGP, which is absent from its target-platform dependency graph.
-Every gateway build and the smoke test enforce that absence. If OpenPGP is introduced,
+only explicit exclusion is GO-2026-5932 on the gateway and OpenBao binaries: the
+advisory concerns OpenPGP, which is absent from their target-platform dependency graphs.
+Every Go build and the smoke test enforce that absence. If OpenPGP is introduced,
 the build fails before scanning. The evidence is retained in the image at
-`/usr/share/ourimageshardened/packages.txt`. `.trivyignore-oauth2-proxy.yaml` scopes
-the exclusion to that finding, package, and binary path; it is never applied to Keycloak.
+`/usr/share/ourimageshardened/packages.txt`. `.trivyignore-oauth2-proxy.yaml` and
+`.trivyignore-openbao.yaml` scope the exclusion to that finding, package, and binary
+path; it is never applied to Keycloak.
 The unfiltered JSON report remains available in each workflow run’s scan artifacts.
 A clean scan does not establish compliance.
-The gateway applies explicitly pinned `golang.org/x/crypto`, `golang.org/x/net` and gRPC security updates
-from `go_security_updates` in the lock, verified through Go's checksum database.
+The gateway and OpenBao apply explicitly pinned `golang.org/x/crypto`, `golang.org/x/net` and gRPC security updates
+from `go_security_updates` in the lock, verified through Go's checksum database. OpenBao also
+takes the `go-jose/v4` pin, which its JWT sign-in uses.
 These pins require review when upstream dependencies change. Keycloak can also apply checksum-pinned library replacements before augmentation, recorded in
 `keycloak_security_updates` in the lock. The list is currently empty because 26.8.1 already bundles the
 patched Netty, OpenTelemetry, SQL Server JDBC, FreeMarker, and BouncyCastle versions; add entries only
@@ -224,7 +247,7 @@ upstream fix are picked up promptly. No application code is forked or changed
 beyond the checksum-pinned security updates recorded in `dependencies.lock.json`.
 
 All rights, trademarks, and credit for the underlying software belong to their
-respective projects and maintainers — oauth2-proxy (MIT), Keycloak (Apache-2.0),
+respective projects and maintainers — oauth2-proxy (MIT), Keycloak (Apache-2.0), OpenBao (MPL-2.0),
 the base images, the FIPS Go toolchain, BouncyCastle FIPS, and every bundled
 library. Each stays under its own license inside the images. The full list is in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). This project is not affiliated

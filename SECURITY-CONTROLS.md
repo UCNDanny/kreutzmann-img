@@ -10,7 +10,8 @@ operating environments and approved use. No badges or compliance labels are emit
 
 | Control | Implementation | Boundary |
 | --- | --- | --- |
-| Fixed non-root identity | UID/GID 65532 gateway; 1000 Keycloak | Images and Compose |
+| Fixed non-root identity | UID/GID 65532 gateway and OpenBao; 1000 Keycloak | Images and Compose |
+| No web console | OpenBao built without the `ui` tag; smoke test fails on any build tag | Image |
 | No build toolchain in final image | Multi-stage source builds | Images |
 | Read-only root filesystem | Compose and smoke test | Railway enforcement unverified |
 | Dropped capabilities / no privilege escalation | Compose and smoke test | Railway enforcement unverified |
@@ -28,10 +29,10 @@ Do not add host daemons or kernel settings to a distroless image to appease a sc
 
 ## Cryptography
 
-- oauth2-proxy builds with `GOFIPS140=v1.0.0` and `CGO_ENABLED=0`. Go documents module
+- oauth2-proxy and OpenBao build with `GOFIPS140=v1.0.0` and `CGO_ENABLED=0`. Go documents module
   v1.0.0 under CMVP certificate 5247. Verify its current status and Security Policy
   against the actual operating environment before use in an assessed system.
-- Go's module mode does not prove every oauth2-proxy dependency or operation is inside
+- Go's module mode does not prove every oauth2-proxy or OpenBao dependency or operation is inside
   that module's boundary. A complete cryptographic call-path audit is outstanding.
   Do not use `GODEBUG=fips140=only` as a production substitute for that assessment.
 - Keycloak uses the BCFIPS versions declared by the pinned release POM and strict

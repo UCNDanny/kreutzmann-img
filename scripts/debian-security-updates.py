@@ -53,8 +53,10 @@ for update in lock['debian_security_updates']:
         md5sums = control_tar.extractfile('./md5sums').read().decode()
     if field(control, 'Package') != package or field(control, 'Version') != update['version']:
         raise RuntimeError(f'Package metadata does not match the lock: {package}')
-    # Overlaying cannot delete files, so the update must ship exactly the installed file set.
-    if paths(md5sums) != paths((base / (package + '.md5sums')).read_text()):
+    # Overlaying cannot delete files, so the update must ship the installed file set. Only
+    # documentation may be left behind, such as a binNMU changelog the security build drops.
+    installed, updated = paths((base / (package + '.md5sums')).read_text()), paths(md5sums)
+    if updated - installed or any(not p.startswith('usr/share/doc/') for p in installed - updated):
         raise RuntimeError(f'File list changed for {package}; overlay would leave stale files')
     with tarfile.open(fileobj=io.BytesIO(members['data.tar.xz'])) as data_tar:
         data_tar.extractall(root, filter='data')

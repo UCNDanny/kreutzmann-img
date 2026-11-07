@@ -22,8 +22,9 @@ projects vendor.
 | --- | --- | --- |
 | oauth2-proxy | https://github.com/oauth2-proxy/oauth2-proxy | MIT |
 | Keycloak | https://github.com/keycloak/keycloak | Apache License 2.0 |
+| OpenBao | https://github.com/openbao/openbao | Mozilla Public License 2.0 |
 
-oauth2-proxy vendors many Go modules and Keycloak bundles many Java libraries;
+oauth2-proxy and OpenBao vendor many Go modules and Keycloak bundles many Java libraries;
 those retain their own licenses (variously MIT, BSD, Apache-2.0, EPL, and
 others). The per-image SBOM is the authoritative list.
 

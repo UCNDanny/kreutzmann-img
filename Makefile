@@ -1,4 +1,4 @@
-.PHONY: setup build up identity gateway down logs update-actions
+.PHONY: setup build check up identity gateway down logs update-actions
 
 PYTHON ?= python3
 
@@ -14,6 +14,11 @@ update-actions:
 build:
 	$(PYTHON) scripts/dependencies.py --build oauth2-proxy
 	$(PYTHON) scripts/dependencies.py --build keycloak
+	$(PYTHON) scripts/dependencies.py --build openbao
+
+# Every image on both platforms: tests, build, smoke test and the release gate.
+check:
+	$(PYTHON) scripts/preflight.py
 
 identity:
 	docker compose up -d keycloak
