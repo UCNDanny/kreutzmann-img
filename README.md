@@ -115,6 +115,18 @@ Upstream source archives are downloaded from locked URLs. Keycloak also copies
 its launcher, JVM options, security-update script, and lock from this repository.
 Neither build needs deployment secrets.
 
+### Before every commit or pull request
+
+Run `make check` and open the pull request only when it ends with `Preflight passed.`
+It runs what the release workflow runs, for every image on both platforms: unit tests,
+build, smoke test, and the fixable-vulnerability gate with the same settings. It checks
+all images, not only the one a change touches: a fix published upstream since the last
+release can make an untouched image fail the gate. AMD64 runs under emulation on an
+Apple Silicon Mac. Compiling OpenBao needs more than Docker Desktop's 4 GB default
+(8 GB recommended); the check stops early with less. `--image` and `--platform` narrow a run while working, but the
+full run comes before the pull request. The pull request template lists the remaining
+manual checks.
+
 ## Updates and supply chain
 
 `dependencies.lock.json` is the source of truth for release archives, checksums,

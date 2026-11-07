@@ -7,8 +7,8 @@ no fix are recorded but do not gate the release.
 | Image | Architecture | Release gate |
 | --- | --- | --- |
 | kreutzmann-img/oauth2-proxy | AMD64 and ARM64 | Pass. One enforced non-applicability exclusion: GO-2026-5932 (OpenPGP). |
-| kreutzmann-img/keycloak | AMD64 and ARM64 | Pass. 52 unfixed Debian base-OS findings, carried and tracked below. |
-| kreutzmann-img/openbao | ARM64 (local build, 2026-11-07); AMD64 runs in CI | Pass with Trivy 0.76.1. The same GO-2026-5932 (OpenPGP) exclusion; 3 unfixed `go-jose/v3` findings carried in `compliance/vulnerability-findings.csv`. |
+| kreutzmann-img/keycloak | AMD64 and ARM64 | Pass. 52 unfixed Debian base-OS findings, carried and tracked below. `zlib1g` pinned to `+deb13u1` (DSA-6613-1) until distroless republishes. |
+| kreutzmann-img/openbao | AMD64 and ARM64 | Pass. The same GO-2026-5932 (OpenPGP) exclusion; 3 unfixed `go-jose/v3` findings carried in `compliance/vulnerability-findings.csv`. |
 
 ## Keycloak base-OS findings (no upstream fix)
 
