@@ -14,6 +14,7 @@ update-actions:
 build:
 	$(PYTHON) scripts/dependencies.py --build oauth2-proxy
 	$(PYTHON) scripts/dependencies.py --build keycloak
+	$(PYTHON) scripts/dependencies.py --build openbao
 
 identity:
 	docker compose up -d keycloak

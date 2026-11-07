@@ -1,0 +1,13 @@
+# Enforced on every architecture by the dependency check in Dockerfile.openbao.
+# This advisory concerns OpenPGP packages, not all of golang.org/x/crypto.
+vulnerabilities:
+  - id: GO-2026-5932
+    paths:
+      - usr/bin/bao
+    purls:
+      - pkg:golang/golang.org/x/crypto
+    statement: >-
+      Not affected: the exact target-platform go list -deps graph contains no
+      golang.org/x/crypto/openpgp packages. The build fails if any are introduced.
+      Evidence is retained at /usr/share/ourimageshardened/packages.txt in the image.
+      Advisory: https://pkg.go.dev/vuln/GO-2026-5932

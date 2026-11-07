@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / 'dependencies.lock.json'
-IMAGES = ('oauth2-proxy', 'keycloak')
+IMAGES = ('oauth2-proxy', 'keycloak', 'openbao')
 
 def sync_base_defaults(lock):
     for image in IMAGES:
@@ -75,22 +75,27 @@ def latest_go_module(module):
             return version
     raise ValueError(f'No unaffected stable version found for {module}')
 
+def go_source(lock, key, repo):
+    """Lock the newest stable release's source archive; return the Go minor its go.mod requires."""
+    tag = stable(repo)['tag_name']
+    if is_newer(tag, lock[key]['version']):
+        commit = api(f'repos/{repo}/commits/{tag}')['sha']
+        url = f'https://codeload.github.com/{repo}/tar.gz/{commit}'
+        # Hash the exact source archive that BuildKit will download.
+        lock[key] = {'version': tag.lstrip('v'), 'commit': commit,
+                     'url': url, 'sha256': hashlib.sha256(fetch(url)).hexdigest()}
+    go_mod = fetch(f'https://raw.githubusercontent.com/{repo}/{lock[key]["commit"]}/go.mod').decode()
+    return re.search(r'^go (\d+\.\d+)', go_mod, re.M).group(1)
+
 def resolve():
     """Return the lock with the newest verified upstream inputs, without writing it."""
     lock = json.loads(LOCK.read_text())
     lock['go_security_updates']['grpc'] = latest_go_module('google.golang.org/grpc')
     lock['go_security_updates']['net'] = latest_go_module('golang.org/x/net')
-    release = stable('oauth2-proxy/oauth2-proxy')
-    tag = release['tag_name']
-    if is_newer(tag, lock['oauth2_proxy']['version']):
-        commit = api(f'repos/oauth2-proxy/oauth2-proxy/commits/{tag}')['sha']
-        url = f'https://codeload.github.com/oauth2-proxy/oauth2-proxy/tar.gz/{commit}'
-        # Hash the exact source archive that BuildKit will download.
-        lock['oauth2_proxy'] = {'version': tag.lstrip('v'), 'commit': commit,
-                               'url': url, 'sha256': hashlib.sha256(fetch(url)).hexdigest()}
-    commit = lock['oauth2_proxy']['commit']
-    go_mod = fetch(f'https://raw.githubusercontent.com/oauth2-proxy/oauth2-proxy/{commit}/go.mod').decode()
-    required = re.search(r'^go (\d+\.\d+)', go_mod, re.M).group(1)
+    lock['go_security_updates']['jose'] = latest_go_module('github.com/go-jose/go-jose/v4')
+    # One Go toolchain builds every Go image: the newest patch of the highest minor they require.
+    required = max((go_source(lock, 'oauth2_proxy', 'oauth2-proxy/oauth2-proxy'),
+                    go_source(lock, 'openbao', 'openbao/openbao')), key=semver)
     go_releases = json.loads(fetch('https://go.dev/dl/?mode=json'))
     go_version = next(r['version'][2:] for r in go_releases if r['stable'] and r['version'].startswith('go' + required + '.'))
     lock['bases']['go'] = digest_image(f'docker.io/library/golang:{go_version}-bookworm')
@@ -131,14 +136,19 @@ def update():
 def build_args(image):
     d = json.loads(LOCK.read_text())
     common = {'CA_IMAGE': d['bases']['ca']}
+    go = common | {'GO_IMAGE': d['bases']['go'], 'STATIC_IMAGE': d['bases']['static'],
+                   'CRYPTO_VERSION': d['go_security_updates']['crypto'],
+                   'GRPC_VERSION': d['go_security_updates']['grpc'],
+                   'NET_VERSION': d['go_security_updates']['net'],
+                   'GOFIPS140': d['go_fips_module']}
     if image == 'oauth2-proxy':
         o = d['oauth2_proxy']
-        return common | {'GO_IMAGE': d['bases']['go'], 'STATIC_IMAGE': d['bases']['static'],
-                         'VERSION': o['version'], 'SOURCE_URL': o['url'],
-                         'CRYPTO_VERSION': d['go_security_updates']['crypto'],
-                         'GRPC_VERSION': d['go_security_updates']['grpc'],
-                         'NET_VERSION': d['go_security_updates']['net'],
-                         'SOURCE_SHA256': o['sha256'], 'GOFIPS140': d['go_fips_module']}
+        return go | {'VERSION': o['version'], 'SOURCE_URL': o['url'], 'SOURCE_SHA256': o['sha256']}
+    if image == 'openbao':
+        o = d['openbao']
+        return go | {'VERSION': o['version'], 'COMMIT': o['commit'],
+                     'SOURCE_URL': o['url'], 'SOURCE_SHA256': o['sha256'],
+                     'JOSE_VERSION': d['go_security_updates']['jose']}
     args = common | {'UBI_IMAGE': d['bases']['ubi'], 'JAVA_IMAGE': d['bases']['java']}
     k = d['keycloak']
     args |= {'VERSION': k['version'], 'SOURCE_URL': k['url'], 'SOURCE_SHA256': k['sha256']}
