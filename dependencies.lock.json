@@ -1,17 +1,18 @@
 {
   "go_fips_module": "v1.0.0",
   "go_security_updates": {
-    "crypto": "v0.58.0",
+    "crypto": "v0.59.0",
     "grpc": "v1.85.0",
     "jose": "v4.1.9",
-    "net": "v0.62.0"
+    "net": "v0.62.0",
+    "otel": "v1.47.0"
   },
   "bases": {
     "go": "docker.io/library/golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea",
-    "static": "gcr.io/distroless/static-debian13:nonroot@sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329",
+    "static": "gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931",
     "ubi": "registry.access.redhat.com/ubi9/ubi-minimal:9.7@sha256:907b68736aa798b2d38255b7aa070b2a70acb90803864a40f05d0ec47556ddd0",
     "ca": "docker.io/library/alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2",
-    "java": "gcr.io/distroless/java21-debian13:nonroot@sha256:d978eefd303c59c42f382aef811a0e41f2c68a6e5c319a23769cd3d1d5bf8e3c"
+    "java": "gcr.io/distroless/java21-debian13:nonroot@sha256:6b60e44d652d66a9e2e584364c96adac4df7133674b2834b6f71741b7cdb1ff3"
   },
   "oauth2_proxy": {
     "version": "7.15.6",
