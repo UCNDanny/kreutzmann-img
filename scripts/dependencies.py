@@ -93,6 +93,7 @@ def resolve():
     lock['go_security_updates']['grpc'] = latest_go_module('google.golang.org/grpc')
     lock['go_security_updates']['net'] = latest_go_module('golang.org/x/net')
     lock['go_security_updates']['jose'] = latest_go_module('github.com/go-jose/go-jose/v4')
+    lock['go_security_updates']['otel'] = latest_go_module('go.opentelemetry.io/otel')
     # One Go toolchain builds every Go image: the newest patch of the highest minor they require.
     required = max((go_source(lock, 'oauth2_proxy', 'oauth2-proxy/oauth2-proxy'),
                     go_source(lock, 'openbao', 'openbao/openbao')), key=semver)
@@ -148,7 +149,8 @@ def build_args(image):
         o = d['openbao']
         return go | {'VERSION': o['version'], 'COMMIT': o['commit'],
                      'SOURCE_URL': o['url'], 'SOURCE_SHA256': o['sha256'],
-                     'JOSE_VERSION': d['go_security_updates']['jose']}
+                     'JOSE_VERSION': d['go_security_updates']['jose'],
+                     'OTEL_VERSION': d['go_security_updates']['otel']}
     args = common | {'UBI_IMAGE': d['bases']['ubi'], 'JAVA_IMAGE': d['bases']['java']}
     k = d['keycloak']
     args |= {'VERSION': k['version'], 'SOURCE_URL': k['url'], 'SOURCE_SHA256': k['sha256']}

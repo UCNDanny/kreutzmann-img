@@ -170,7 +170,7 @@ The unfiltered JSON report remains available in each workflow run’s scan artif
 A clean scan does not establish compliance.
 The gateway and OpenBao apply explicitly pinned `golang.org/x/crypto`, `golang.org/x/net` and gRPC security updates
 from `go_security_updates` in the lock, verified through Go's checksum database. OpenBao also
-takes the `go-jose/v4` pin, which its JWT sign-in uses.
+takes the `go-jose/v4` pin, which its JWT sign-in uses, and the OpenTelemetry `otel` pin.
 These pins require review when upstream dependencies change. Keycloak can also apply checksum-pinned library replacements before augmentation, recorded in
 `keycloak_security_updates` in the lock. The list is currently empty because 26.8.1 already bundles the
 patched Netty, OpenTelemetry, SQL Server JDBC, FreeMarker, and BouncyCastle versions; add entries only
