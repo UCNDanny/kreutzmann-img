@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import re
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('dependencies', ROOT / 'scripts/dependencies.py')
@@ -10,6 +11,26 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class RepositoryTests(unittest.TestCase):
+    def test_go_security_updates_never_downgrade_to_avoid_an_advisory(self):
+        with patch.object(module, 'fetch', return_value=b'v1.1.0\nv1.2.0\nv1.3.0'), \
+             patch.object(module, 'osv_affected', side_effect=lambda name, version: version != 'v1.1.0'):
+            with self.assertRaisesRegex(ValueError, 'at or above v1.2.0'):
+                module.latest_go_module('example.org/module', 'v1.2.0')
+
+    def test_go_security_updates_choose_the_newest_unaffected_stable_version(self):
+        with patch.object(module, 'fetch', return_value=b'v1.1.0\nv1.2.0\nv1.3.0\nv2.0.0-rc.1'), \
+             patch.object(module, 'osv_affected', side_effect=lambda name, version: version == 'v1.3.0'):
+            self.assertEqual(module.latest_go_module('example.org/module', 'v1.1.0'), 'v1.2.0')
+
+    def test_base_defaults_match_the_lock(self):
+        lock = json.loads((ROOT / 'dependencies.lock.json').read_text())
+        for image in module.IMAGES:
+            source = (ROOT / ('Dockerfile.' + image)).read_text()
+            for name, ref in lock['bases'].items():
+                match = re.search(r'^ARG ' + name.upper() + r'_IMAGE=(.+)$', source, re.M)
+                if match:
+                    self.assertEqual(match.group(1), ref)
+
     def test_build_inputs_are_pinned(self):
         lock = json.loads((ROOT / 'dependencies.lock.json').read_text())
         for image in lock['bases'].values():

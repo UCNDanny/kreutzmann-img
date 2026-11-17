@@ -23,6 +23,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Read the locked scanner version
+        id: scanner
+        run: echo "version=v$(jq -r .trivy_version dependencies.lock.json)" >> "$GITHUB_OUTPUT"
       - run: python3 -m unittest discover -s tests -v
       - name: Build natively from locked inputs
         run: python3 scripts/dependencies.py --build '${{ matrix.image }}' --platform 'linux/${{ matrix.arch }}'
@@ -32,6 +35,7 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: kreutzmann-img/${{ matrix.image }}:local
+          version: ${{ steps.scanner.outputs.version }}
           scanners: vuln
           format: json
           output: vulnerabilities.json
@@ -41,6 +45,7 @@ jobs:
         with:
           image-ref: kreutzmann-img/${{ matrix.image }}:local
           severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          version: ${{ steps.scanner.outputs.version }}
           ignore-unfixed: true
           scanners: vuln
           trivyignores: ${{ matrix.image != 'keycloak' && format('.trivyignore-{0}.yaml', matrix.image) || '' }}
@@ -59,6 +64,7 @@ jobs:
         with:
           image-ref: kreutzmann-img/${{ matrix.image }}:local
           format: spdx-json
+          version: ${{ steps.scanner.outputs.version }}
           output: sbom.spdx.json
           exit-code: '0'
       - name: Export the tested image

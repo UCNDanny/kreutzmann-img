@@ -8,6 +8,7 @@ image's unfixed finding into a fixable one, and the gate then blocks the whole r
 Usage: preflight.py [--platform linux/arm64] [--image keycloak]
 """
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -32,6 +33,10 @@ def main():
     parser.add_argument('--platform', action='append', choices=('linux/amd64', 'linux/arm64'))
     parser.add_argument('--image', action='append', choices=dependencies.IMAGES)
     args = parser.parse_args()
+    expected = json.loads(dependencies.LOCK.read_text())['trivy_version']
+    actual = json.loads(subprocess.check_output(['trivy', 'version', '--format', 'json'], text=True))['Version']
+    if actual != expected:
+        sys.exit(f'Trivy {actual} is installed; use locked version {expected} to match CI.')
     images = args.image or dependencies.IMAGES
     memory = int(subprocess.check_output(['docker', 'info', '--format', '{{.MemTotal}}'], text=True))
     if 'openbao' in images and memory < 7 * 2**30:

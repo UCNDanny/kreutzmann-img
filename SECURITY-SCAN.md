@@ -1,50 +1,56 @@
-# Release scan status — 2026-09-06
+# Release scan status — 2026-11-17
 
-The release workflow blocks any image that has a vulnerability with an available
-upstream fix, at every severity (`ignore-unfixed` is set on the gate). Findings with
-no fix are recorded but do not gate the release.
+Trivy **0.76.2** is pinned in `dependencies.lock.json` and used by release CI,
+monitoring and local preflight. The release gate blocks vulnerabilities with an
+available upstream fix at every severity (`ignore-unfixed`). A passing gate does
+not mean that no vulnerabilities exist.
 
-| Image | Architecture | Release gate |
-| --- | --- | --- |
-| kreutzmann-img/oauth2-proxy | AMD64 and ARM64 | Pass. One enforced non-applicability exclusion: GO-2026-5932 (OpenPGP). |
-| kreutzmann-img/keycloak | AMD64 and ARM64 | Pass. 52 unfixed Debian base-OS findings, carried and tracked below. |
-| kreutzmann-img/openbao | AMD64 and ARM64 | Pass. The same GO-2026-5932 (OpenPGP) exclusion; 3 unfixed `go-jose/v3` findings carried in `compliance/vulnerability-findings.csv`. |
+The current upstream application releases are oauth2-proxy **7.15.6**, Keycloak
+**26.8.2** and OpenBao **2.7.2**. Their versions and base-image digests were checked
+against upstream on this date; no newer stable inputs were available.
 
-## Keycloak base-OS findings (no upstream fix)
+## Current findings
 
-Trivy 0.69.3 reports 52 findings on each architecture: 4 high, 30 medium, 18 low. All
-are in the distroless Java 21 Debian 13 base image; `keycloak.jar` and the other Java
-dependencies report zero. Trivy 0.74.0 also reports no fixed versions. The base digest
-matches the lock:
-`sha256:bb0b3c7edc4417acdf76ea0f52bb5fae28881fe05aae6cc55af4cc4cb0200d2d`.
+Unfiltered scans of the rebuilt images report:
 
-Affected packages include libbz2-1.0, libc-bin, libc6, libexpat1, liblcms2-2,
-libpng16-16t64, libuuid1, and zlib1g. The full list per run is in the workflow's scan
-artifacts; the tracked register is `compliance/vulnerability-findings.csv`. Some
-advisories describe utilities rather than the library delivered here; an
-advisory-specific assessment is still owed before any compliance claim.
+| Image | Findings | Fixable findings | Remaining scope |
+| --- | --- | --- | --- |
+| oauth2-proxy | 0 | 0 | None reported. |
+| Keycloak | 87 | 0 | Debian 13 base packages: 8 high, 50 medium, 23 low, 6 unknown. No Java-library findings. |
+| OpenBao | 3 | 0 | `github.com/go-jose/go-jose/v3` v3.0.5: 1 high, 2 medium. |
 
-These are carried, not dismissed:
+The current findings replace the older RPM/base-image entries in
+`compliance/vulnerability-findings.csv`. Scan results are a dated snapshot, not a
+permanent clean bill of health. The published-image monitor checks both AMD64 and
+ARM64; it scans published `:latest` images, not the deployment inventory. Production
+operators must explicitly deploy reviewed image digests after release.
 
-- The daily monitor workflow scans the published images and opens a `monitor` issue
-  as soon as a fix becomes available. `python3 scripts/dependencies.py --update`
-  refreshes the base digest once distroless publishes the fix.
-- Until then, a Debian fix can be pinned in `debian_security_updates` in
-  `dependencies.lock.json`: the checksum-pinned `.deb` from snapshot.debian.org is
-  overlaid onto the runtime base together with its dpkg status record. The build
-  fails once the base's installed version changes, so a pin is reviewed and removed
-  when distroless catches up.
-- Every workflow run uploads the unfiltered JSON report as a scan artifact, including
-  when the gate fails on a fixable finding.
-- Review `compliance/vulnerability-findings.csv` when updating the base image.
-- Docker Scout reports zero findings for Keycloak. One scanner's result does not mean
-  every scanner agrees or that the image is vulnerability-free.
+Keycloak's Java 21 distroless base is pinned at
+`sha256:6b60e44d652d66a9e2e584364c96adac4df7133674b2834b6f71741b7cdb1ff3`.
+OpenBao's remaining findings are CVE-2026-116585, CVE-2026-116586 and
+CVE-2026-116587. No upstream fix is reported for its v3 dependency; the separately
+pinned v4 dependency does not remove v3 from the binary.
 
-Do not widen the gate to ignore fixable findings, and do not add blanket
-`.trivyignore` entries without individually justified non-applicability evidence.
+## Detection and patching
 
-## Smoke test
+- Every six hours, the monitor scans all three published images on both platforms
+  and reports upstream changes and fixable findings in one standing monitor issue.
+- The update job proposes verified upstream releases, base-image digests, all five
+  Go security pins and the scanner version in one PR. It dispatches all six native
+  build/smoke/scan checks on the candidate branch. Review their outcome before merging.
+- Java and Debian replacement pins still require a human to select and review
+  them. A new upstream release that changes an overridden library fails the build
+  until the override is reviewed. Go FIPS module changes remain manual as well.
+- Neither PR approval, merging nor production deployment is automated.
+- Release jobs preserve the unfiltered JSON scan artifact even when the gate fails.
 
-Both images pass the hardening smoke test: fixed non-root identity, start-up under the
-read-only/no-capability restrictions, and FIPS build posture (gateway) / BCFIPS Approved
-Mode (Keycloak). Database-backed login and production deployment have not been tested.
+The GO-2026-5932 OpenPGP exclusions remain limited to the two Go binary paths and
+package. Both builds enforce that OpenPGP is absent from their target dependency
+graphs. No exclusions were widened for this update. Do not ignore fixable findings
+or equate a scanner result with FIPS, CIS or STIG compliance.
+
+## Validation boundary
+
+`make check` builds, smoke-tests and scans every image on ARM64 and AMD64. Smoke
+tests check the fixed non-root identity, restricted runtime startup and the Go FIPS
+or BCFIPS posture. They do not exercise database-backed login or production traffic.
