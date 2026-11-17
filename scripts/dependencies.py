@@ -63,7 +63,7 @@ def osv_affected(module, version):
     with urllib.request.urlopen(request, timeout=30) as response:
         return bool(json.loads(response.read()).get('vulns'))
 
-def latest_go_module(module):
+def latest_go_module(module, current):
     # "@latest" can point at an abandoned release line the maintainers chose not to
     # patch (e.g. grpc-go skipped fixing 1.84.x and told users to move to 1.85+), so
     # walk stable versions newest-first and skip any OSV still flags as vulnerable.
@@ -71,9 +71,11 @@ def latest_go_module(module):
                if re.fullmatch(r'v\d+\.\d+\.\d+', v)]
     versions.sort(key=lambda v: tuple(int(part) for part in v[1:].split('.')), reverse=True)
     for version in versions:
+        if semver(version) < semver(current):
+            break
         if not osv_affected(module, version):
             return version
-    raise ValueError(f'No unaffected stable version found for {module}')
+    raise ValueError(f'No unaffected stable version at or above {current} found for {module}')
 
 def go_source(lock, key, repo):
     """Lock the newest stable release's source archive; return the Go minor its go.mod requires."""
@@ -90,10 +92,17 @@ def go_source(lock, key, repo):
 def resolve():
     """Return the lock with the newest verified upstream inputs, without writing it."""
     lock = json.loads(LOCK.read_text())
-    lock['go_security_updates']['grpc'] = latest_go_module('google.golang.org/grpc')
-    lock['go_security_updates']['net'] = latest_go_module('golang.org/x/net')
-    lock['go_security_updates']['jose'] = latest_go_module('github.com/go-jose/go-jose/v4')
-    lock['go_security_updates']['otel'] = latest_go_module('go.opentelemetry.io/otel')
+    for key, module in {
+        'crypto': 'golang.org/x/crypto',
+        'grpc': 'google.golang.org/grpc',
+        'net': 'golang.org/x/net',
+        'jose': 'github.com/go-jose/go-jose/v4',
+        'otel': 'go.opentelemetry.io/otel',
+    }.items():
+        lock['go_security_updates'][key] = latest_go_module(module, lock['go_security_updates'][key])
+    scanner = stable('aquasecurity/trivy')['tag_name'].lstrip('v')
+    if is_newer(scanner, lock['trivy_version']):
+        lock['trivy_version'] = scanner
     # One Go toolchain builds every Go image: the newest patch of the highest minor they require.
     required = max((go_source(lock, 'oauth2_proxy', 'oauth2-proxy/oauth2-proxy'),
                     go_source(lock, 'openbao', 'openbao/openbao')), key=semver)

@@ -1,4 +1,5 @@
 {
+  "trivy_version": "0.76.2",
   "go_fips_module": "v1.0.0",
   "go_security_updates": {
     "crypto": "v0.59.0",

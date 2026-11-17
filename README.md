@@ -26,18 +26,31 @@ The workflows must be at the repository root to be discovered by GitHub.
 In GitHub:
 
 1. Protect `main`; require the six native `build` matrix checks.
-2. Enable the daily monitor workflow (`monitor.yml`). You can also run it manually
-   in Actions. Watch the repository's issues to be notified of its reports.
+2. Enable the monitor workflow (`monitor.yml`), which runs every six hours. You can
+   also run it manually in Actions. Under Settings → Actions → General → Workflow
+   permissions, enable **Allow GitHub Actions to create and approve pull requests**.
+   GitHub combines these permissions; this workflow only creates PRs, never approvals.
+   Watch the repository's
+   issues and pull requests for its reports and proposed updates.
 3. Ensure native `ubuntu-24.04-arm` runners are available for your repository/plan.
    Assign equivalent runners if necessary.
 4. Signing and the Cosign SBOM attestation always run. GitHub-native artifact
    attestations (SLSA provenance, second SBOM) additionally run only on a public
    repo or an org/Enterprise plan; a user-owned private repo skips just those.
 
-Nothing is updated automatically. The monitor checks upstream releases and base-image
-digests and scans the published `:latest` images daily. When there is something to act
+The monitor checks upstream releases and base-image digests and scans the published
+`:latest` images on both architectures every six hours. When there is something to act
 on, it opens a single `monitor` issue, comments whenever the report changes, and closes
-the issue once everything is addressed. For the first release, push these files to `main`,
+the issue once everything is addressed. It also opens or refreshes one
+`automation/dependency-updates` PR with verified upstream inputs and dispatches the
+six build/smoke/scan checks on that branch. Review those checks before merging; an
+opened PR is a candidate, not proof that its images passed. Using explicit workflow
+dispatch avoids relying on push events from `GITHUB_TOKEN`, which do not trigger CI.
+No PR is automatically approved or merged. Major/minor upgrades, FIPS changes and
+Java/Debian security overrides still require review. CVEs that need a manual override
+remain in the monitor issue; the bot does not invent dependency replacements.
+
+For the first release, push these files to `main`,
 then open **Actions → Build, validate, and release** and wait for all jobs to finish.
 You can also select **Run workflow** on `main`. Each final `index` job prints the
 exact image digest to use in your service. Set the service image source to that
@@ -52,7 +65,7 @@ Images are published as:
 
 Each `index` job prints a deployable `@sha256:...` digest to the workflow summary.
 Every publish to `main` also refreshes two movable tags per image: `:latest` and
-`:<upstream-version>` (for example `:7.15.5` for oauth2-proxy, `:26.8.1` for
+`:<upstream-version>` (for example `:7.15.6` for oauth2-proxy, `:26.8.2` for
 Keycloak). Both move whenever the image is rebuilt — including base-image CVE
 patches that do not change the upstream version — so pin the `@sha256:...` digest
 for anything that must be reproducible. Immutable per-run tags encode source SHA,
@@ -130,14 +143,19 @@ manual checks.
 ## Updates and supply chain
 
 `dependencies.lock.json` is the source of truth for release archives, checksums,
-base-image index digests, source commit, compatible Go patch, and BCFIPS artifacts.
+base-image index digests, source commit, compatible Go patch, BCFIPS artifacts and
+Trivy version. CI, monitoring and local preflight use the same scanner version;
+local preflight refuses a mismatched installation.
 
 ```sh
 python3 scripts/dependencies.py --update
 ```
 
 This refreshes stable upstream releases and base digests and derives BCFIPS versions
-from Keycloak's release POM. Run it when the monitor issue reports updates. Review changes, especially major releases and crypto
+from Keycloak's release POM. The monitor uses this updater for its PRs; it can also be
+run manually. All five pinned Go security modules, including `x/crypto`, are checked
+against OSV, and the updater refuses to downgrade a module to avoid an advisory.
+Review changes, especially major releases and crypto
 provider changes. The Go FIPS module version stays explicitly pinned for manual review.
 The initial archive hashes are obtained from trusted HTTPS upstreams and then locked;
 this is not a substitute for upstream signature verification or a CMVP assessment.
@@ -172,9 +190,10 @@ The gateway and OpenBao apply explicitly pinned `golang.org/x/crypto`, `golang.o
 from `go_security_updates` in the lock, verified through Go's checksum database. OpenBao also
 takes the `go-jose/v4` pin, which its JWT sign-in uses, and the OpenTelemetry `otel` pin.
 These pins require review when upstream dependencies change. Keycloak can also apply checksum-pinned library replacements before augmentation, recorded in
-`keycloak_security_updates` in the lock. The list is currently empty because 26.8.1 already bundles the
-patched Netty, OpenTelemetry, SQL Server JDBC, FreeMarker, and BouncyCastle versions; add entries only
-when a fix lands upstream after a release. Keycloak's distroless runtime leaves build tooling outside the final image. Upstream vulnerabilities with an available fix must be taken before a release can publish.
+`keycloak_security_updates` in the lock. The current 26.8.2 build carries Guava,
+MariaDB JDBC and OpenTelemetry replacements. Review and remove those overrides when
+a new Keycloak release bundles the fixes; the build fails if an expected upstream
+library has changed. Keycloak's distroless runtime leaves build tooling outside the final image. Upstream vulnerabilities with an available fix must be taken before a release can publish.
 Native build jobs have read-only repository permissions. Publication jobs download
 the tested artifacts and never execute application images or untrusted PR code.
 
