@@ -47,8 +47,11 @@ six build/smoke/scan checks on that branch. Review those checks before merging; 
 opened PR is a candidate, not proof that its images passed. Using explicit workflow
 dispatch avoids relying on push events from `GITHUB_TOKEN`, which do not trigger CI.
 No PR is automatically approved or merged. Major/minor upgrades, FIPS changes and
-Java/Debian security overrides still require review. CVEs that need a manual override
-remain in the monitor issue; the bot does not invent dependency replacements.
+Java security overrides still require review. The update also locks the newest Debian
+release of every package the Java base image ships outdated, resolved through apt's
+signed indexes and fetched from snapshot.debian.org, and drops those entries once the
+base catches up. CVEs that need a manual Java override remain in the monitor issue;
+the bot does not invent dependency replacements.
 
 For the first release, push these files to `main`,
 then open **Actions → Build, validate, and release** and wait for all jobs to finish.
