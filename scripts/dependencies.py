@@ -2,11 +2,14 @@
 """Refresh reviewed build inputs. Network access is only needed for --update."""
 import argparse
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
+import tarfile
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -89,6 +92,70 @@ def go_source(lock, key, repo):
     go_mod = fetch(f'https://raw.githubusercontent.com/{repo}/{lock[key]["commit"]}/go.mod').decode()
     return re.search(r'^go (\d+\.\d+)', go_mod, re.M).group(1)
 
+# Runs in the Debian resolver image: apt verifies the signed trixie, trixie-updates and
+# trixie-security indexes and prints each newer package's file name and SHA-256.
+APT_NEWER = r'''
+set -eu
+native=$(dpkg --print-architecture)
+for arch in amd64 arm64; do [ "$arch" = "$native" ] || dpkg --add-architecture "$arch"; done
+apt-get update -qq >/dev/null
+while read -r package arch base; do
+  spec=$package; [ "$arch" = all ] || spec=$package:$arch
+  candidate=$(apt-cache policy "$spec" | awk '/Candidate:/ {print $2}')
+  if dpkg --compare-versions "$candidate" gt "$base"; then
+    echo "$package $base $candidate $(apt-get download --print-uris "$spec=$candidate" | cut -d' ' -f2,4)"
+  fi
+done
+'''
+
+def base_packages(image, platform):
+    """Map each Debian package in a distroless image to its (version, architecture)."""
+    container = subprocess.check_output(['docker', 'create', '--platform', platform, image, 'x'], text=True).strip()
+    try:
+        archive = subprocess.check_output(['docker', 'cp', f'{container}:/var/lib/dpkg/status.d', '-'])
+    finally:
+        subprocess.run(['docker', 'rm', container], check=True, capture_output=True)
+    packages = {}
+    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+        for member in tar.getmembers():
+            if member.isfile() and not member.name.endswith('.md5sums'):
+                control = dict(line.split(': ', 1) for line in tar.extractfile(member).read().decode().splitlines()
+                               if ': ' in line and not line.startswith(' '))
+                packages[control['Package']] = (control['Version'], control['Architecture'])
+    return packages
+
+def snapshot_url(package, version, name):
+    # Pool files vanish once superseded; snapshot.debian.org keeps every published file.
+    info = json.loads(fetch(f'https://snapshot.debian.org/mr/binary/{package}/'
+                            f'{urllib.parse.quote(version, safe="")}/binfiles?fileinfo=1'))
+    for files in info['fileinfo'].values():
+        for file in files:
+            if file['name'] == name and file['archive_name'] in ('debian', 'debian-security'):
+                return (f'https://snapshot.debian.org/archive/{file["archive_name"]}/'
+                        f'{file["first_seen"]}{file["path"]}/{name}')
+    raise ValueError(f'{name} is not on snapshot.debian.org yet')
+
+def debian_updates(image, resolver):
+    """Lock the newest Debian release of every package the distroless base ships outdated."""
+    updates = {}
+    for arch in ('amd64', 'arm64'):
+        query = ''.join(f'{package} {architecture} {version}\n' for package, (version, architecture)
+                        in base_packages(image, 'linux/' + arch).items())
+        output = subprocess.run(['docker', 'run', '--rm', '-i', resolver, 'sh', '-c', APT_NEWER],
+                                input=query, text=True, capture_output=True, check=True).stdout
+        for line in output.splitlines():
+            package, base, version, name, checksum = line.split()
+            entry = updates.setdefault(package, {'package': package, 'base_version': base,
+                                                 'version': version, 'debs': {}})
+            if (entry['base_version'], entry['version']) != (base, version):
+                raise ValueError(f'{package} versions differ between architectures')
+            entry['debs'][arch] = {'url': snapshot_url(package, version, name),
+                                   'sha256': checksum.removeprefix('SHA256:')}
+    for entry in updates.values():
+        if set(entry['debs']) != {'amd64', 'arm64'}:
+            raise ValueError(f'{entry["package"]} is outdated on only one architecture')
+    return sorted(updates.values(), key=lambda entry: entry['package'])
+
 def resolve():
     """Return the lock with the newest verified upstream inputs, without writing it."""
     lock = json.loads(LOCK.read_text())
@@ -133,8 +200,9 @@ def resolve():
         url = f'https://repo.maven.apache.org/maven2/org/bouncycastle/{artifact}/{v}/{artifact}-{v}.jar'
         providers[artifact] = {'version': v, 'url': url, 'sha256': hashlib.sha256(fetch(url)).hexdigest()}
     lock['bcfips'] = providers
-    for name in ('static', 'ubi', 'ca', 'java'):
+    for name in ('static', 'ubi', 'ca', 'java', 'debian'):
         lock['bases'][name] = digest_image(lock['bases'][name].split('@')[0])
+    lock['debian_security_updates'] = debian_updates(lock['bases']['java'], lock['bases']['debian'])
     # Cryptographic module version is deliberately reviewed manually, never switched to "latest".
     return lock
 

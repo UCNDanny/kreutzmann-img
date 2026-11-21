@@ -17,6 +17,9 @@ def leaves(value, prefix=''):
     if isinstance(value, dict):
         for key, child in value.items():
             yield from leaves(child, f'{prefix}.{key}' if prefix else key)
+    elif isinstance(value, list) and all(isinstance(child, dict) and 'package' in child for child in value):
+        for child in value:
+            yield from leaves({k: v for k, v in child.items() if k != 'package'}, f'{prefix}.{child["package"]}')
     else:
         yield prefix, value
 
@@ -47,8 +50,8 @@ def main(scans):
     if rows:
         sections.append('## Fixable vulnerabilities in published `:latest` images\n\n'
                         + table(('Image', 'Vulnerability', 'Severity', 'Package', 'Installed', 'Fixed'), rows)
-                        + '\n\nRefresh the affected base or pin the fix (`keycloak_security_updates` or '
-                        '`debian_security_updates` in `dependencies.lock.json`), then release.')
+                        + '\n\nDebian fixes and base refreshes arrive in the dependency update PR. '
+                        'Pin other fixes in `keycloak_security_updates` in `dependencies.lock.json`, then release.')
     if sections:
         print('\n\n'.join(sections))
 
