@@ -110,6 +110,12 @@ done
 
 def base_packages(image, platform):
     """Map each Debian package in a distroless image to its (version, architecture)."""
+    # Docker cannot hold two platforms under one index digest, so pull the platform's own manifest.
+    index = json.loads(subprocess.check_output(['docker', 'buildx', 'imagetools', 'inspect', image, '--raw']))
+    os_name, arch = platform.split('/')
+    digest = next(m['digest'] for m in index['manifests']
+                  if m['platform']['os'] == os_name and m['platform']['architecture'] == arch)
+    image = image.split('@')[0] + '@' + digest
     container = subprocess.check_output(['docker', 'create', '--platform', platform, image, 'x'], text=True).strip()
     try:
         archive = subprocess.check_output(['docker', 'cp', f'{container}:/var/lib/dpkg/status.d', '-'])
