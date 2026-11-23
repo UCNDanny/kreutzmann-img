@@ -90,9 +90,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
-      contents: write
-      pull-requests: write
-      actions: write
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -105,10 +103,12 @@ jobs:
         run: python3 scripts/dependencies.py --update
       - name: Validate generated build inputs
         run: python3 -m unittest discover -s tests -v
+      # A PR opened with the workflow token waits for approval before its checks run; one opened
+      # with a personal token does not.
       - name: Open or refresh the dependency update PR
-        id: pr
         uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
         with:
+          token: ${{ secrets.UPDATE_PR_TOKEN }}
           branch: automation/dependency-updates
           delete-branch: true
           add-paths: |
@@ -120,14 +120,7 @@ jobs:
             Refresh upstream releases, verified archive hashes, Go security dependencies,
             base-image digests and the Trivy scanner. The FIPS module remains manually pinned.
 
-            The build workflow is dispatched on this branch to build, smoke-test and scan
+            The build workflow runs on this PR to build, smoke-test and scan
             all three images on AMD64 and ARM64. Review its results before merging.
             A passing workflow does not approve this PR or deploy production services.
             Review major/minor upgrades and any existing Java/Debian overrides explicitly.
-      # GITHUB_TOKEN pushes do not start ordinary push CI. Explicit dispatch runs
-      # read-only build jobs on this branch; publishing is restricted to main.
-      - name: Run all image checks on the update branch
-        if: steps.pr.outputs.pull-request-operation == 'created' || steps.pr.outputs.pull-request-operation == 'updated'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run release.yml --ref automation/dependency-updates
