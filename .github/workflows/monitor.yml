@@ -95,7 +95,7 @@ jobs:
       # A PR opened with the workflow token waits for approval before its checks run; the app's does not.
       - name: Get the update app's token
         id: app
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           client-id: ${{ vars.UPDATE_APP_CLIENT_ID }}
           private-key: ${{ secrets.UPDATE_APP_PRIVATE_KEY }}
@@ -113,7 +113,6 @@ jobs:
       - name: Validate generated build inputs
         run: python3 -m unittest discover -s tests -v
       - name: Open or refresh the dependency update PR
-        id: pr
         uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
         with:
           token: ${{ steps.app.outputs.token }}
