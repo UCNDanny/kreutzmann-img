@@ -10,10 +10,10 @@
   },
   "bases": {
     "go": "docker.io/library/golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea",
-    "static": "gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931",
+    "static": "gcr.io/distroless/static-debian13:nonroot@sha256:8ce6dd87e9823c5b48dcfb2c8604714ccb351ce59607327bcc4957448da279b5",
     "ubi": "registry.access.redhat.com/ubi9/ubi-minimal:9.7@sha256:907b68736aa798b2d38255b7aa070b2a70acb90803864a40f05d0ec47556ddd0",
     "ca": "docker.io/library/alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2",
-    "java": "gcr.io/distroless/java21-debian13:nonroot@sha256:5a98faeeedb4159dcebf85c1331762b13b5b57dac1cac20ca82ba79b681402f4",
+    "java": "gcr.io/distroless/java21-debian13:nonroot@sha256:128bd878463537eef7771b50fecf68faace9089f654a2d233f1c4f344e6817d9",
     "debian": "docker.io/library/debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2"
   },
   "oauth2_proxy": {
@@ -153,51 +153,5 @@
       "sha256": "fea3d78726e49620168c3f6194ff491edfd1ec89b2df06fd5d5b73e55d74a342"
     }
   ],
-  "debian_security_updates": [
-    {
-      "package": "libc6",
-      "base_version": "2.41-12+deb13u4",
-      "version": "2.41-12+deb13u5",
-      "debs": {
-        "amd64": {
-          "url": "https://snapshot.debian.org/archive/debian/20261114T144101Z/pool/main/g/glibc/libc6_2.41-12+deb13u5_amd64.deb",
-          "sha256": "b59b0625cd1a791375d40dab23a4d5d3d0641e3d0a773501becdc3725b7f99cf"
-        },
-        "arm64": {
-          "url": "https://snapshot.debian.org/archive/debian/20261114T144101Z/pool/main/g/glibc/libc6_2.41-12+deb13u5_arm64.deb",
-          "sha256": "0966fc3da1a26cc57647c68b5736f791b6e7eb498173a7993f63b6c89b4ed4f5"
-        }
-      }
-    },
-    {
-      "package": "libc-bin",
-      "base_version": "2.41-12+deb13u4",
-      "version": "2.41-12+deb13u5",
-      "debs": {
-        "amd64": {
-          "url": "https://snapshot.debian.org/archive/debian/20261114T144101Z/pool/main/g/glibc/libc-bin_2.41-12+deb13u5_amd64.deb",
-          "sha256": "f30ee7381a9c6a3936165259bcd58e65f4b288e351606d200c8435724c5876dd"
-        },
-        "arm64": {
-          "url": "https://snapshot.debian.org/archive/debian/20261114T144101Z/pool/main/g/glibc/libc-bin_2.41-12+deb13u5_arm64.deb",
-          "sha256": "889850625c686a6d0b26a8baee5fb96f33e9f3305882f3a6751bb4c9433063e1"
-        }
-      }
-    },
-    {
-      "package": "libfreetype6",
-      "base_version": "2.13.3+dfsg-1+deb13u1",
-      "version": "2.13.3+dfsg-1+deb13u2",
-      "debs": {
-        "amd64": {
-          "url": "https://snapshot.debian.org/archive/debian/20261107T144357Z/pool/main/f/freetype/libfreetype6_2.13.3+dfsg-1+deb13u2_amd64.deb",
-          "sha256": "b57a449c874f2cc126a48149daa27b8d1a8935fbf1609ccfe28ca1610d00ee29"
-        },
-        "arm64": {
-          "url": "https://snapshot.debian.org/archive/debian/20261107T144357Z/pool/main/f/freetype/libfreetype6_2.13.3+dfsg-1+deb13u2_arm64.deb",
-          "sha256": "e743a5b04183fcc2fc8347abadcecb30c82528012bd446f8168195bd1552721a"
-        }
-      }
-    }
-  ]
+  "debian_security_updates": []
 }

@@ -1,6 +1,6 @@
 # Build through scripts/dependencies.py so all ARGs come from the reviewed lock.
 ARG GO_IMAGE=docker.io/library/golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea
-ARG STATIC_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931
+ARG STATIC_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:8ce6dd87e9823c5b48dcfb2c8604714ccb351ce59607327bcc4957448da279b5
 ARG CA_IMAGE=docker.io/library/alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2
 FROM --platform=$BUILDPLATFORM ${CA_IMAGE} AS ca
 # Alpine's base supplies ca-certificates-bundle; no mutable apk install is needed.
