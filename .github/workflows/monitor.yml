@@ -1,7 +1,8 @@
 name: Monitor dependencies and vulnerabilities
 on:
   schedule:
-    - cron: '23 */6 * * *'
+    - cron: '0 3 * * *'
+      timezone: 'America/Nuuk'
   workflow_dispatch:
 permissions:
   contents: read
