@@ -234,7 +234,8 @@ def build_args(image):
                      'SOURCE_URL': o['url'], 'SOURCE_SHA256': o['sha256'],
                      'JOSE_VERSION': d['go_security_updates']['jose'],
                      'OTEL_VERSION': d['go_security_updates']['otel']}
-    args = common | {'UBI_IMAGE': d['bases']['ubi'], 'JAVA_IMAGE': d['bases']['java']}
+    args = common | {'UBI_IMAGE': d['bases']['ubi'], 'JAVA_IMAGE': d['bases']['java'],
+                     'GO_IMAGE': d['bases']['go'], 'GOFIPS140': d['go_fips_module']}
     k = d['keycloak']
     args |= {'VERSION': k['version'], 'SOURCE_URL': k['url'], 'SOURCE_SHA256': k['sha256']}
     for name, provider in d['bcfips'].items():

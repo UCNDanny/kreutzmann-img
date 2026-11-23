@@ -4,17 +4,19 @@ Own-image builds of oauth2-proxy, Keycloak and OpenBao for `linux/amd64` and `li
 The GitHub Actions pipeline builds on native runners, tests and scans before
 publication, and publishes signed multi-platform images to GHCR.
 
-The publication gate blocks any release with a vulnerability that has an available
-upstream fix, at every severity. Findings with no fix — currently Debian base-OS
-packages in both distroless images — are tracked in [SECURITY-SCAN.md](SECURITY-SCAN.md)
-and `compliance/vulnerability-findings.csv` rather than gated. A single scanner's clean
-result does not by itself satisfy the gate.
+A release is blocked if any image has a vulnerability with an upstream fix, at any
+severity. Vulnerabilities without a fix (currently Debian base packages) do not block;
+they are listed in [SECURITY-SCAN.md](SECURITY-SCAN.md) and
+`compliance/vulnerability-findings.csv`.
 
-**These are not CIS-certified, STIG-assessed, or deployment-qualified FIPS images.**
-Go's pinned FIPS module and Keycloak's strict BCFIPS provider are configured.
-The remaining assessment boundaries are recorded in [SECURITY-CONTROLS.md](SECURITY-CONTROLS.md).
-Do not advertise compliance without completing that evidence. This matters on Railway,
-where the underlying FIPS host and runtime controls have not been established.
+**Status: hardened; not assessed or certified.** All images meet the CIS Docker
+Benchmark image controls (section 4), checked by this repository but not independently
+assessed; see `compliance/control-matrix.csv`. They use FIPS 140-3 validated cryptography
+(Go Cryptographic Module, CMVP #5247, in oauth2-proxy and OpenBao; BouncyCastle FIPS in
+strict mode in Keycloak). FIPS compliance of a deployment also depends on its host and
+has not been assessed. What is covered and what is still open is listed in
+[SECURITY-CONTROLS.md](SECURITY-CONTROLS.md). Do not describe these images, or services
+built on them, as compliant or certified until an assessment has been done.
 
 ## Put this in your repository
 
@@ -26,12 +28,12 @@ The workflows must be at the repository root to be discovered by GitHub.
 In GitHub:
 
 1. Protect `main`; require the six native `build` matrix checks.
-2. Enable the monitor workflow (`monitor.yml`), which runs every six hours. You can
-   also run it manually in Actions. Under Settings → Actions → General → Workflow
-   permissions, enable **Allow GitHub Actions to create and approve pull requests**.
-   GitHub combines these permissions; this workflow only creates PRs, never approvals.
-   Watch the repository's
-   issues and pull requests for its reports and proposed updates.
+2. Enable the monitor workflow (`monitor.yml`). It runs daily at 03:00 America/Nuuk
+   and can also be run manually in Actions. Add the repository secret
+   `UPDATE_PR_TOKEN`: a fine-grained personal access token for this repository only,
+   with Contents and Pull requests read and write. The monitor opens its update PR with
+   this token so the PR's checks start without approval. Watch the repository's issues
+   and pull requests for its reports and proposed updates.
 3. Ensure native `ubuntu-24.04-arm` runners are available for your repository/plan.
    Assign equivalent runners if necessary.
 4. Signing and the Cosign SBOM attestation always run. GitHub-native artifact
@@ -39,14 +41,12 @@ In GitHub:
    repo or an org/Enterprise plan; a user-owned private repo skips just those.
 
 The monitor checks upstream releases and base-image digests and scans the published
-`:latest` images on both architectures every six hours. When there is something to act
+`:latest` images on both architectures once a day. When there is something to act
 on, it opens a single `monitor` issue, comments whenever the report changes, and closes
 the issue once everything is addressed. It also opens or refreshes one
-`automation/dependency-updates` PR with verified upstream inputs and dispatches the
-six build/smoke/scan checks on that branch. Review those checks before merging; an
-opened PR is a candidate, not proof that its images passed. Using explicit workflow
-dispatch avoids relying on push events from `GITHUB_TOKEN`, which do not trigger CI.
-No PR is automatically approved or merged. Major/minor upgrades, FIPS changes and
+`automation/dependency-updates` PR with verified upstream inputs; the six
+build/smoke/scan checks run on that PR. Review those checks before merging; an
+opened PR is a candidate, not proof that its images passed. No PR is automatically approved or merged. Major/minor upgrades, FIPS changes and
 Java security overrides still require review. The update also locks the newest Debian
 release of every package the Java base image ships outdated, resolved through apt's
 signed indexes and fetched from snapshot.debian.org, and drops those entries once the
@@ -165,7 +165,11 @@ this is not a substitute for upstream signature verification or a CMVP assessmen
 
 All runtime images use digest-pinned distroless Debian 13 bases: static for the
 gateway and OpenBao, Java 21 for Keycloak. UBI and its RPM tooling exist only in Keycloak's
-build stage. No runtime contains a shell or package manager. Keycloak starts
+build stage. No runtime contains a shell or package manager. Each image has a
+`HEALTHCHECK` that runs `/usr/bin/healthcheck`, a small FIPS-mode Go program that calls the
+URL in `HEALTHCHECK_URL` (oauth2-proxy `/ping`, Keycloak `/health/ready` on port 9000,
+OpenBao `/v1/sys/health`); override that variable if the listener address or TLS
+differs. A sealed OpenBao reports unhealthy. Keycloak starts
 directly in Java; use `JAVA_TOOL_OPTIONS` for additional JVM options and keep
 `start --optimized` for server startup.
 
@@ -253,7 +257,8 @@ CI builds each image natively from locked inputs, runs the repository unit tests
 smoke-tests the built image under the production runtime restrictions, and blocks any
 finding with an available fix before publishing signatures and a Cosign SBOM
 attestation, plus GitHub-native SLSA provenance where GitHub supports it. The
-smoke test checks the fixed non-root identity, that the image starts read-only with no
+smoke test checks the fixed non-root identity, the health check and its FIPS build,
+that no file is setuid or setgid, that the image starts read-only with no
 capabilities, the gateway's FIPS build flags and OpenPGP absence, and that Keycloak
 reaches BCFIPS Approved Mode. It does not exercise OIDC login, database TLS, HTTP
 routing, or the FIPS qualification of the host.

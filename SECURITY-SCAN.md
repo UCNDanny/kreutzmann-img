@@ -33,11 +33,11 @@ pinned v4 dependency does not remove v3 from the binary.
 
 ## Detection and patching
 
-- Every six hours, the monitor scans all three published images on both platforms
+- Daily at 03:00 America/Nuuk, the monitor scans all three published images on both platforms
   and reports upstream changes and fixable findings in one standing monitor issue.
 - The update job proposes verified upstream releases, base-image digests, all five
-  Go security pins and the scanner version in one PR. It dispatches all six native
-  build/smoke/scan checks on the candidate branch. Review their outcome before merging.
+  Go security pins and the scanner version in one PR. All six native
+  build/smoke/scan checks run on that PR. Review their outcome before merging.
 - Java and Debian replacement pins still require a human to select and review
   them. A new upstream release that changes an overridden library fails the build
   until the override is reviewed. Go FIPS module changes remain manual as well.
