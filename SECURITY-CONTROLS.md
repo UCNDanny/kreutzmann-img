@@ -1,6 +1,7 @@
 # Security scope and evidence
 
-Status: **hardened engineering builds; compliance assessment incomplete**.
+Status: **hardened; not assessed or certified**. The CIS Docker Benchmark image
+controls (section 4) are met and self-checked; see `compliance/control-matrix.csv`.
 
 CIS/STIG compliance is not a property inferred from a small image or a vulnerability
 scan. FIPS validation concerns exact modules and their Security Policies, including
@@ -13,6 +14,9 @@ operating environments and approved use. No badges or compliance labels are emit
 | Fixed non-root identity | UID/GID 65532 gateway and OpenBao; 1000 Keycloak | Images and Compose |
 | No web console | OpenBao built without the `ui` tag; smoke test fails on any build tag | Image |
 | No build toolchain in final image | Multi-stage source builds | Images |
+| Health check | `HEALTHCHECK` runs `/usr/bin/healthcheck` (FIPS build) against `HEALTHCHECK_URL` | Image; Railway uses its own health checks |
+| No setuid/setgid files | Smoke test fails on any such file | Images |
+| `COPY` only | Remote inputs fetched with `curl` and verified with `sha256sum` | Build stages |
 | Read-only root filesystem | Compose and smoke test | Railway enforcement unverified |
 | Dropped capabilities / no privilege escalation | Compose and smoke test | Railway enforcement unverified |
 | Restricted temporary storage | Owned bounded tmpfs with noexec/nosuid/nodev | Compose and smoke test |
@@ -21,17 +25,18 @@ operating environments and approved use. No badges or compliance labels are emit
 | Supply-chain evidence | Native builds, fix-available CVE gate at all severities, enforced OpenPGP non-applicability, Cosign signing + SBOM attestation on every image; GitHub-native SLSA provenance only on a public/Enterprise repo | GitHub Actions must run in user's repo |
 | Public access boundary | Private upstreams, only gateway app domain | Operator must verify Railway exposure |
 
-These are descriptive engineering controls, not invented CIS/STIG control IDs.
-Before making a compliance claim select the exact benchmark/STIG revisions, populate
-`compliance/control-matrix.csv` with their real identifiers, and collect evidence.
+`compliance/control-matrix.csv` maps these controls to the CIS Docker Benchmark section 4
+identifiers with their evidence. Before an assessment, confirm the benchmark revision and
+have the rows checked independently; host, daemon and runtime sections are out of image scope.
 Host requirements do not become image requirements simply because an OS is in the image.
 Do not add host daemons or kernel settings to a distroless image to appease a scanner.
 
 ## Cryptography
 
-- oauth2-proxy and OpenBao build with `GOFIPS140=v1.0.0` and `CGO_ENABLED=0`. Go documents module
-  v1.0.0 under CMVP certificate 5247. Verify its current status and Security Policy
-  against the actual operating environment before use in an assessed system.
+- oauth2-proxy, OpenBao and the health check build with `GOFIPS140=v1.0.0` and
+  `CGO_ENABLED=0`, which turns FIPS mode on by default. Go Cryptographic Module v1.0.0 is
+  FIPS 140-3 validated under CMVP certificate 5247 (active as of November 2026). Check its
+  Security Policy against the actual operating environment before use in an assessed system.
 - Go's module mode does not prove every oauth2-proxy or OpenBao dependency or operation is inside
   that module's boundary. A complete cryptographic call-path audit is outstanding.
   Do not use `GODEBUG=fips140=only` as a production substitute for that assessment.

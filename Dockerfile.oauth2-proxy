@@ -18,8 +18,9 @@ ARG TARGETOS
 ARG TARGETARCH
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local
 WORKDIR /src
-ADD --checksum=sha256:${SOURCE_SHA256} ${SOURCE_URL} /tmp/source.tar.gz
-RUN tar -xzf /tmp/source.tar.gz --strip-components=1 -C /src
+RUN curl -fsSL --proto '=https' --tlsv1.2 -o /tmp/source.tar.gz "${SOURCE_URL}" \
+    && echo "${SOURCE_SHA256}  /tmp/source.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/source.tar.gz --strip-components=1 -C /src
 # Apply reviewed security updates while retaining Go checksum-database validation.
 RUN go get golang.org/x/crypto@${CRYPTO_VERSION} golang.org/x/net@${NET_VERSION} google.golang.org/grpc@${GRPC_VERSION} \
     && go mod download && go mod verify
@@ -32,18 +33,32 @@ RUN export GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOFIPS140=${GOFIPS140}; \
     && test -s /out/packages.txt \
     && awk '/^golang.org\/x\/crypto\/openpgp(\/|$)/ { print "OpenPGP imported: remove the GO-2026-5932 exclusion"; bad=1 } END { exit bad }' /out/packages.txt
 
+FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS healthcheck
+ARG GOFIPS140
+ARG TARGETOS
+ARG TARGETARCH
+ENV CGO_ENABLED=0 GOTOOLCHAIN=local
+WORKDIR /src
+COPY scripts/healthcheck/ /src/
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOFIPS140=${GOFIPS140} \
+    go build -trimpath -buildvcs=false -ldflags="-s -w" -o /out/healthcheck . \
+    && go version -m /out/healthcheck > /out/healthcheck-build-info.txt
+
 FROM ${STATIC_IMAGE}
 ARG VERSION
 COPY --from=build --chmod=0555 /out/oauth2-proxy /bin/oauth2-proxy
+COPY --from=healthcheck --chmod=0555 /out/healthcheck /usr/bin/healthcheck
+COPY --from=healthcheck /out/healthcheck-build-info.txt /usr/share/ourimageshardened/healthcheck-build-info.txt
 COPY --from=build /out/build-info.txt /usr/share/ourimageshardened/build-info.txt
 COPY --from=build /out/packages.txt /usr/share/ourimageshardened/packages.txt
 COPY --from=ca /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    HEALTHCHECK_URL=http://127.0.0.1:4180/ping
 # Fixed unprivileged identity, independent of deployment defaults.
 USER 65532:65532
 EXPOSE 4180
 LABEL org.opencontainers.image.title="oauth2-proxy" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.licenses="MIT"
-# No shell or executable healthcheck is added to the runtime.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD ["/usr/bin/healthcheck"]
 ENTRYPOINT ["/bin/oauth2-proxy"]

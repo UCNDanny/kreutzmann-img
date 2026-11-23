@@ -10,6 +10,7 @@ or HTTP routing is involved.
 import json
 import subprocess
 import sys
+import tarfile
 import tempfile
 import time
 from pathlib import Path
@@ -36,9 +37,29 @@ def docker(*args):
     return subprocess.check_output(['docker', *args], text=True).strip()
 
 
-# 1. Fixed unprivileged identity, baked into the image config.
-actual_user = json.loads(docker('image', 'inspect', image))[0]['Config']['User']
+# 1. Fixed unprivileged identity and a health check, baked into the image config.
+image_config = json.loads(docker('image', 'inspect', image))[0]['Config']
+actual_user = image_config['User']
 assert actual_user == expected_user, f'expected USER {expected_user}, got {actual_user!r}'
+healthcheck = (image_config.get('Healthcheck') or {}).get('Test')
+assert healthcheck == ['CMD', '/usr/bin/healthcheck'], f'unexpected HEALTHCHECK {healthcheck!r}'
+
+# No setuid or setgid file anywhere in the image, and the health check is a FIPS build.
+container = docker('create', image)
+try:
+    export = subprocess.Popen(['docker', 'export', container], stdout=subprocess.PIPE)
+    with tarfile.open(fileobj=export.stdout, mode='r|') as layer:
+        privileged = [m.name for m in layer if m.isfile() and m.mode & 0o6000]
+    assert export.wait() == 0, 'docker export failed'
+    assert not privileged, f'setuid/setgid files: {privileged}'
+    with tempfile.TemporaryDirectory() as directory:
+        subprocess.run(['docker', 'cp', f'{container}:/usr/share/ourimageshardened/healthcheck-build-info.txt',
+                        directory], check=True)
+        health_info = (Path(directory) / 'healthcheck-build-info.txt').read_text()
+    assert f'GOFIPS140={lock["go_fips_module"]}' in health_info and 'CGO_ENABLED=0' in health_info, health_info
+finally:
+    docker('rm', container)
+print('Health check configured and built with GOFIPS140; no setuid/setgid files.')
 
 # 2. Starts with a read-only root, no Linux capabilities, no privilege escalation,
 #    and only the small owned tmpfs it declares.
@@ -115,6 +136,10 @@ if image_name == 'openbao':
             assert status.returncode == 2, logs.stdout + logs.stderr
             state = json.loads(status.stdout)
             assert state['sealed'] and not state['initialized'], state
+            # The health check reaches the API and reports the uninitialized server unhealthy.
+            health = subprocess.run(['docker', 'exec', server, '/usr/bin/healthcheck'],
+                                    capture_output=True, text=True)
+            assert health.returncode == 1 and 'answered 501' in health.stderr, health.stderr
         finally:
             subprocess.run(['docker', 'rm', '-f', '-v', server], capture_output=True)
     print('OpenBao starts sealed on integrated storage, with no web UI compiled in.')
