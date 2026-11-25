@@ -1,7 +1,7 @@
-ARG JAVA_IMAGE=gcr.io/distroless/java21-debian13:nonroot@sha256:5a98faeeedb4159dcebf85c1331762b13b5b57dac1cac20ca82ba79b681402f4
+ARG JAVA_IMAGE=gcr.io/distroless/java21-debian13:nonroot@sha256:128bd878463537eef7771b50fecf68faace9089f654a2d233f1c4f344e6817d9
 ARG UBI_IMAGE=registry.access.redhat.com/ubi9/ubi-minimal:9.7@sha256:907b68736aa798b2d38255b7aa070b2a70acb90803864a40f05d0ec47556ddd0
 ARG CA_IMAGE=docker.io/library/alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2
-ARG GO_IMAGE=docker.io/library/golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea
+ARG GO_IMAGE=docker.io/library/golang:1.27.4-bookworm@sha256:ce59b41415e2524ae99926fe1f37ce48ba8c194dcbd2a56a65436cdcefa2bd34
 FROM --platform=$BUILDPLATFORM ${CA_IMAGE} AS ca
 RUN test -s /etc/ssl/certs/ca-certificates.crt
 
